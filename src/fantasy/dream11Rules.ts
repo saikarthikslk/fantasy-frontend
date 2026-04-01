@@ -11,8 +11,8 @@ export type FantasyRole = 'WK' | 'BAT' | 'AR' | 'BOWL'
 export const ROLE_LIMITS: Record<FantasyRole, { min: number; max: number }> = {
   WK: { min: 1, max: 8 },
   BAT: { min: 1, max: 8 },
-  AR: { min: 0, max: 8 },
-  BOWL: { min: 3, max: 8 },
+  AR: { min: 1, max: 8 },
+  BOWL: { min: 1, max: 8 },
 }
 
 /** Deterministic credits when API does not send a value (8.0–10.5, step 0.5). */
