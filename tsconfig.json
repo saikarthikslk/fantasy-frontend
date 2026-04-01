@@ -6,6 +6,11 @@
   ],
   "compilerOptions": {
     "allowJs": true,
-    "checkJs": false
-  }
+    "checkJs": false,
+      "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
+
+ 
+
 }
