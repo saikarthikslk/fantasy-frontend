@@ -10,7 +10,7 @@ export type FantasyRole = 'WK' | 'BAT' | 'AR' | 'BOWL'
 
 export const ROLE_LIMITS: Record<FantasyRole, { min: number; max: number }> = {
   WK: { min: 1, max: 8 },
-  BAT: { min: 3, max: 8 },
+  BAT: { min: 1, max: 8 },
   AR: { min: 0, max: 8 },
   BOWL: { min: 3, max: 8 },
 }
@@ -130,13 +130,13 @@ export function validateCompleteSquad(players: ApiPlayer[]): string[] {
   }
 
   const roles = countRoles(players)
-  ;(Object.keys(ROLE_LIMITS) as FantasyRole[]).forEach((r) => {
-    const { min, max } = ROLE_LIMITS[r]
-    const n = roles[r]
-    if (n < min)
-      errors.push(`Need at least ${min} ${roleLabel(r)} (have ${n}).`)
-    if (n > max) errors.push(`At most ${max} ${roleLabel(r)} (have ${n}).`)
-  })
+    ; (Object.keys(ROLE_LIMITS) as FantasyRole[]).forEach((r) => {
+      const { min, max } = ROLE_LIMITS[r]
+      const n = roles[r]
+      if (n < min)
+        errors.push(`Need at least ${min} ${roleLabel(r)} (have ${n}).`)
+      if (n > max) errors.push(`At most ${max} ${roleLabel(r)} (have ${n}).`)
+    })
 
   const byTeam = countByTeamId(players)
   for (const [tid, n] of byTeam) {
