@@ -431,6 +431,7 @@ export function MatchDetail() {
 
   /* Determine match result */
   const matchResult = useMemo(() => {
+    if(!match || match.state !== "Completed") return null;
     if (!innings1 || !innings2) return scRaw?.matchstatus ?? null;
     if (innings1.total.runs > innings2.total.runs)
       return `${team1Name} won by ${innings1.total.runs - innings2.total.runs} runs`;
