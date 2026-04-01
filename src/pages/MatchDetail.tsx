@@ -384,6 +384,7 @@ export function MatchDetail() {
     });
 
     es.addEventListener('refresh', (e) => {
+      console.log('Received refresh event:', e.data);
     refreshData();
   
        
