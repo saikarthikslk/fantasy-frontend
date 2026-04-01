@@ -22,12 +22,17 @@ export function Home() {
                 Sign in with Google
               </a>
             )}
+            {token!==null && (
+              <>
             <Link to="/matches" className={`btn ${token ? 'btn-primary' : 'btn-ghost'}`}>
               View matches
             </Link>
             <Link to="/leaderboard" className="btn btn-ghost">
               Leaderboard
             </Link>
+            </>
+          )
+}  
           </div>
           <p className="home-signin-hint muted small">
             {token

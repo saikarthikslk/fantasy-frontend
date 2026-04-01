@@ -769,9 +769,12 @@ export function MatchDetail() {
                           <tr
                             key={`${row.email}-${start + i}`}
                             className="lb-row"
-                            onClick={() =>
-                              row.did != null && setPreviewDid(row.did)
-                            }
+                            onClick={() => {
+                              if(match.state !== "Upcoming" || (match.state === "Upcoming" && row.did === myDreamId)) {
+                                setPreviewDid(row.did)
+                              }
+                            
+                            }}
                           >
                             <td>{start + i + 1}</td>
                             <td>

@@ -1,17 +1,18 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { OAUTH_GOOGLE_URL, setToken } from '../api/client'
-import { useAuthToken } from '../auth/useAuthToken'
+import { OAUTH_GOOGLE_URL, setToken  } from '../api/client'
 import { TokenCapture } from '../components/TokenCapture'
+import { useState } from 'react'
+import { useAuthToken } from '../auth/useAuthToken'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `nav-link${isActive ? ' nav-link--active' : ''}`
 
 export function RootLayout() {
-  const token = useAuthToken()
+  const [token,settoken1 ] = useState<string | null>(useAuthToken()) ;
 
   return (
     <div className="app-shell">
-      <TokenCapture />
+      <TokenCapture setroot = {settoken1} />
       <header className="top-bar">
         <NavLink to="/" className="brand" end title="Cricket fantasy — dream teams">
           <span className="brand-mark" aria-hidden />
@@ -22,12 +23,16 @@ export function RootLayout() {
             <NavLink to="/" className={linkClass} end>
               Home
             </NavLink>
+            {token !== null && (
+              <>
             <NavLink to="/matches" className={linkClass}>
               Matches
             </NavLink>
             <NavLink to="/leaderboard" className={linkClass}>
               Leaderboard
             </NavLink>
+            </>)
+} 
             {token && (
               <NavLink to="/profile" className={linkClass}>
                 Profile
@@ -41,7 +46,16 @@ export function RootLayout() {
                 <button
                   type="button"
                   className="btn btn-ghost btn-tiny"
-                  onClick={() => setToken(null)}
+                  onClick={() => 
+                    {
+                      
+                      setToken(null) ; 
+                      
+                      settoken1(null) ;
+                      window.location.href = '/' ;
+                    
+                    
+                    }}
                 >
                   Sign out
                 </button>
