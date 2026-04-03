@@ -268,12 +268,11 @@ export function MatchDetail() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-   const refreshData = () => {
-        let cancelled = false;
+  const refreshData = () => {
+    let cancelled = false;
 
     console.log("Refreshing data...");
 
- 
     fetchScorecard(matchId)
       .then((data) => {
         if (!cancelled) setScRaw(data);
@@ -284,9 +283,7 @@ export function MatchDetail() {
             e instanceof Error ? e.message : "Failed to load scorecard",
           );
       })
-      .finally(() => {
-  
-      });
+      .finally(() => {});
 
     fetchMatchLeaderboard(matchId)
       .then((data) => {
@@ -298,14 +295,8 @@ export function MatchDetail() {
             e instanceof Error ? e.message : "Failed to load leaderboard",
           );
       })
-      .finally(() => {
-    
-      });
-
-
-
-
-   }
+      .finally(() => {});
+  };
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -377,34 +368,30 @@ export function MatchDetail() {
   }, [matchId]);
 
   useEffect(() => {
-    const es = new EventSource(apiUrl('/api/stream/notif/'+matchId));
+    const es = new EventSource(apiUrl("/api/stream/notif/" + matchId));
 
-    es.addEventListener('open', () => {
-        console.log('SSE connection established');
+    es.addEventListener("open", () => {
+      console.log("SSE connection established");
     });
 
-    es.addEventListener('refresh', (e) => {
-      console.log('Received refresh event:', e.data);
-    refreshData();
-  
-       
+    es.addEventListener("refresh", (e) => {
+      console.log("Received refresh event:", e.data);
+      refreshData();
     });
 
-  
     es.onmessage = (e) => {
-        console.log('Generic message:', e.data);
+      console.log("Generic message:", e.data);
     };
 
     es.onerror = (e) => {
-        console.error('SSE error:', e);
+      console.error("SSE error:", e);
     };
 
     // Cleanup: runs when component unmounts or dependencies change
     return () => {
-        es.close();
+      es.close();
     };
-}, []);
-
+  }, []);
 
   const match = useMemo(
     () => rows.find((m) => m.matchId === matchId) ?? null,
@@ -431,7 +418,7 @@ export function MatchDetail() {
 
   /* Determine match result */
   const matchResult = useMemo(() => {
-    if(!match || match.state !== "Completed") return null;
+    if (!match || match.state !== "Completed") return null;
     if (!innings1 || !innings2) return scRaw?.matchstatus ?? null;
     if (innings1.total.runs > innings2.total.runs)
       return `${team1Name} won by ${innings1.total.runs - innings2.total.runs} runs`;
@@ -520,7 +507,10 @@ export function MatchDetail() {
 
       {previewDid != null && (
         <div className="md-modal-backdrop">
-          <div className="md-modal-shell">
+          <div
+            className="md-modal-shell"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
             <TeamPreview
               matchId={matchId}
               dreamId={previewDid}
@@ -771,10 +761,13 @@ export function MatchDetail() {
                             key={`${row.email}-${start + i}`}
                             className="lb-row"
                             onClick={() => {
-                              if(match.state !== "Upcoming" || (match.state === "Upcoming" && row.did === myDreamId)) {
-                                setPreviewDid(row.did)
+                              if (
+                                match.state !== "Upcoming" ||
+                                (match.state === "Upcoming" &&
+                                  row.did === myDreamId)
+                              ) {
+                                setPreviewDid(row.did);
                               }
-                            
                             }}
                           >
                             <td>{start + i + 1}</td>
