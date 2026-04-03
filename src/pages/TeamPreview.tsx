@@ -15,7 +15,7 @@ function assignRole(index) {
 function groupByRole(players, captainId, vcId) {
   const groups = { WK: [], BAT: [], AR: [], BOWL: [] };
   players.forEach((p, i) => {
-    const role = p.role || assignRole(i);
+    const role = p.type || assignRole(i);
     groups[role]?.push({
       ...p,
       isCaptain: p.playerid === captainId,
@@ -26,7 +26,7 @@ function groupByRole(players, captainId, vcId) {
 }
 
 function Avatar({ player, size = 54 }) {
-  console.log(player)
+
   const [imgErr, setImgErr] = useState(false);
   const initials = player.name?.split(" ").map(w => w[0]).slice(0, 2).join("") || "?";
   return (
@@ -85,7 +85,7 @@ function RoleRow({ role, players }) {
       <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: 1.3, color: "rgba(255,255,255,0.32)", textAlign: "center", textTransform: "uppercase", marginBottom: 12 }}>
         {ROLE_LABELS[role]}
       </div>
-      <div style={{ display: "flex", justifyContent: "center", gap: players.length > 3 ? 12 : 24, flexWrap: "wrap" }}>
+      <div style={{ display: "flex",  justifyContent: "center", gap: 24, flexWrap: "wrap" }}>
         {players.map(p => <PlayerCard key={p.playerid} player={p} />)}
       </div>
     </div>
@@ -149,6 +149,7 @@ export default function TeamPreview({ matchId, dreamId, close }) {
       return acc;
     }, {})
   );
+    console.log(groupByRole(playerEntities, captain, vcaptain));
 
   return (
     <div style={{ position: "relative", fontFamily: "'Segoe UI', system-ui, sans-serif", maxWidth: 420, margin: "0 auto", borderRadius: 20, overflow: "hidden", boxShadow: "0 16px 56px rgba(0,0,0,0.55)", background: "#0d1f3c" }}>
