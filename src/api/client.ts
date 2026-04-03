@@ -1,8 +1,8 @@
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://javacloud-app.duckdns.org:8080'
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://javacloud-app.duckdns.org'
 
 /** Spring Boot serves OAuth at this origin; not proxied (browser must hit 8080 for redirects). */
 export const BACKEND_ORIGIN =
-  import.meta.env.VITE_BACKEND_ORIGIN ?? 'http://javacloud-app.duckdns.org:8080'
+  import.meta.env.VITE_BACKEND_ORIGIN ?? 'https://javacloud-app.duckdns.org'
 
 export const OAUTH_GOOGLE_URL = `${BACKEND_ORIGIN}/oauth2/authorization/google`
 
