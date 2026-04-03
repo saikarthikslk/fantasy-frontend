@@ -12,6 +12,7 @@ export default defineConfig({
         target: 'http://javacloud-app.duckdns.org:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
+        secure: false,
       },
     },
   },
