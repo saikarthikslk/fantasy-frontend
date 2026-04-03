@@ -9,7 +9,7 @@ export default defineConfig({
    allowedHosts: ['*','sustainability-ellis-caps-learn.trycloudflare.com'],
     proxy: {
       '/api': {
-        target: 'https://23ae-123-201-171-91.ngrok-free.app',
+        target: 'https://c8fd-123-201-171-91.ngrok-free.app',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
