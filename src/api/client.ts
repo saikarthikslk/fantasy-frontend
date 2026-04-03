@@ -1,8 +1,8 @@
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://e86b-123-201-175-18.ngrok-free.app'
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://23ae-123-201-171-91.ngrok-free.app'
 
 /** Spring Boot serves OAuth at this origin; not proxied (browser must hit 8080 for redirects). */
 export const BACKEND_ORIGIN =
-  import.meta.env.VITE_BACKEND_ORIGIN ?? 'https://e86b-123-201-175-18.ngrok-free.app'
+  import.meta.env.VITE_BACKEND_ORIGIN ?? 'https://23ae-123-201-171-91.ngrok-free.app'
 
 export const OAUTH_GOOGLE_URL = `${BACKEND_ORIGIN}/oauth2/authorization/google`
 
