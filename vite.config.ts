@@ -9,7 +9,7 @@ export default defineConfig({
    allowedHosts: ['*','sustainability-ellis-caps-learn.trycloudflare.com'],
     proxy: {
       '/api': {
-        target: 'https://c8fd-123-201-171-91.ngrok-free.app',
+        target: 'http://javacloud-app.duckdns.org:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
