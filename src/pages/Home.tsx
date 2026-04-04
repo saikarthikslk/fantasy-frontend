@@ -127,7 +127,7 @@ export function Home() {
               Why FantasyF
             </h2>
             <p className="text-muted-foreground mt-2">
-              Built for cricket fans who love fantasy
+              Built for cricket fans who love fantasies 🌚
             </p>
           </div>
           <div className="grid gap-6 md:grid-cols-3">
@@ -135,17 +135,17 @@ export function Home() {
               {
                 icon: Swords,
                 title: 'Cricket only',
-                desc: 'One sport, one flow — squads and roles tuned for T20-style fantasy, not a generic multi-sport feed.',
+                desc: 'Inkem kavaali enti? 😏',
               },
               {
                 icon: Zap,
-                title: 'Live & upcoming',
-                desc: 'Tabs for match status so you can plan teams ahead, follow live games, or review finished matches.',
+                title: 'Reliable and robust',
+                desc: 'Match chudakunda wick gaadu bugs fix chesthaad!!',
               },
               {
                 icon: Shield,
                 title: 'Fair squad rules',
-                desc: 'Credits, role limits, and team caps keep picks challenging — same spirit as popular fantasy cricket apps.',
+                desc: 'Wick gadiki nachinattu, ranking marchi dengthaad..',
               },
             ].map((item) => (
               <div key={item.title} className="flex gap-4 p-4 rounded-lg hover:bg-muted/50 transition-colors">
