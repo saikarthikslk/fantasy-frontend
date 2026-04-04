@@ -62,7 +62,7 @@ export function Home() {
           </div>
           <p className="text-sm text-muted-foreground mt-2">
             {token
-              ? "You're signed in — open a match to see the scorecard or create your dream team."
+              ? "You're signed in — inkem? Kaanivuu kaanivuu.."
               : 'Sign in to save your team and compete on the leaderboard.'}
           </p>
         </div>
