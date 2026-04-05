@@ -20,7 +20,7 @@ export function Home() {
     <div className="flex flex-col">
       {/* Hero */}
       <section className="relative overflow-hidden border-b">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(34,197,94,0.08),transparent)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(255,255,255,0.04),transparent)]" />
         <div className="container relative py-20 md:py-32 flex flex-col items-center text-center gap-6">
           <div className="inline-flex items-center gap-2 rounded-full border bg-muted/50 px-4 py-1.5 text-xs font-medium text-muted-foreground">
             <Swords className="h-3.5 w-3.5 text-primary" />

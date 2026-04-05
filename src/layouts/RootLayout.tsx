@@ -49,8 +49,8 @@ export function RootLayout() {
             end
             className="flex items-center gap-2 font-bold text-lg tracking-tight text-foreground hover:no-underline"
           >
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <Swords className="h-4 w-4 text-primary-foreground" />
+            <div className="h-8 w-8 rounded-lg bg-primary-foreground flex items-center justify-center">
+              <Swords className="h-4 w-4 text-primary" />
             </div>
             <span>FantasyF</span>
           </NavLink>

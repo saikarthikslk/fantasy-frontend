@@ -158,7 +158,19 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
                 captainId={draft.captainId}
                 viceCaptainId={draft.viceCaptainId}
                 captainViceErrors={draft.captainViceErrors}
-                onAssign={draft.assignCaptainVice}
+                onSelectCaptain={(key) => {
+                  draft.setCaptainVice((prev) => {
+                    if (prev.captainId === key) return { ...prev, captainId: null }
+                    return { captainId: key, viceCaptainId: prev.viceCaptainId === key ? null : prev.viceCaptainId }
+                  })
+                }}
+                onSelectViceCaptain={(key) => {
+                  draft.setCaptainVice((prev) => {
+                    if (prev.viceCaptainId === key) return { ...prev, viceCaptainId: null }
+                    return { captainId: prev.captainId === key ? null : prev.captainId, viceCaptainId: key }
+                  })
+                }}
+                onRemove={draft.removePlayer}
                 onSave={handleSubmit}
                 canSave={draft.canSave}
                 saving={saving}

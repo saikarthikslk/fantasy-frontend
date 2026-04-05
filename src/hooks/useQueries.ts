@@ -65,6 +65,8 @@ export function useOverallLeaderboard() {
   return useQuery({
     queryKey: queryKeys.overallLeaderboard,
     queryFn: fetchOverallLeaderboard,
+    staleTime: 1000 * 60 * 30, // 30 min — season board rarely changes
+    gcTime: 1000 * 60 * 60,    // keep in cache for 1 hr
   })
 }
 
