@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef, useSyncExternalStore } from "react";
 import type {
   MatchLeaderboardEntry,
   MatchLbPlayer,
@@ -28,6 +28,7 @@ import {
   TrendingUp,
   Users,
   Zap,
+  ChevronRight,
 } from "lucide-react";
 
 /* ── Types ────────────────────────────────────────────── */
@@ -404,16 +405,17 @@ function MyXISummary({
   );
 }
 
-function PlayerRow({ player, rank, showMedals }: { player: PlayerStat; rank: number; showMedals: boolean }) {
+function PlayerRow({ player, rank, showMedals, onClick }: { player: PlayerStat; rank: number; showMedals: boolean; onClick?: () => void }) {
   const isTopScorer = showMedals && rank <= 3 && player.points > 0;
 
   return (
     <div
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+      onClick={onClick}
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer ${
         player.inMyXI
           ? "bg-primary/[0.06] border border-primary/15 hover:bg-primary/[0.1]"
           : isTopScorer
-            ? "bg-primary/5 border border-primary/10"
+            ? "bg-primary/5 border border-primary/10 hover:bg-primary/[0.08]"
             : "bg-muted/30 hover:bg-muted/50"
       }`}
     >
@@ -493,7 +495,256 @@ function PlayerRow({ player, rank, showMedals }: { player: PlayerStat; rank: num
           {player.points > 0 ? player.points.toFixed(1) : "—"}
         </span>
       </div>
+
+      {/* Tap indicator */}
+      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
     </div>
+  );
+}
+
+/* ── Selected-By Types & Drawer ──────────────────────── */
+
+type SelectedByUser = {
+  name: string;
+  email: string;
+  totalpoints: number;
+  asCaptain: boolean;
+  asViceCaptain: boolean;
+};
+
+/** Build a map: playerId → list of users who picked that player */
+function buildSelectedByMap(
+  lbRows: MatchLeaderboardEntry[],
+): Map<string, SelectedByUser[]> {
+  const map = new Map<string, SelectedByUser[]>();
+  for (const row of lbRows) {
+    for (const p of row.playerEntities ?? []) {
+      let list = map.get(p.playerid);
+      if (!list) {
+        list = [];
+        map.set(p.playerid, list);
+      }
+      list.push({
+        name: row.name || row.email,
+        email: row.email,
+        totalpoints: row.totalpoints,
+        asCaptain: p.playerid === row.captain,
+        asViceCaptain: p.playerid === row.vcaptain,
+      });
+    }
+  }
+  // Sort each list by total points descending
+  for (const list of map.values()) {
+    list.sort((a, b) => b.totalpoints - a.totalpoints);
+  }
+  return map;
+}
+
+function SelectedByDrawer({
+  open,
+  onClose,
+  player,
+  users,
+  totalUsers,
+}: {
+  open: boolean;
+  onClose: () => void;
+  player: PlayerStat | null;
+  users: SelectedByUser[];
+  totalUsers: number;
+}) {
+  const [dragY, setDragY] = useState(0);
+  const [visible, setVisible] = useState(false);
+  const [entered, setEntered] = useState(false);
+  const dragStartY = useRef(0);
+  const isDragging = useRef(false);
+  const dragYRef = useRef(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+
+  // Animate in/out
+  useEffect(() => {
+    if (open) {
+      setVisible(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setEntered(true));
+      });
+    } else if (visible) {
+      setEntered(false);
+      const timer = setTimeout(() => setVisible(false), 420);
+      return () => clearTimeout(timer);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  // Touch drag-to-dismiss
+  useEffect(() => {
+    const el = sheetRef.current;
+    if (!el) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (scrollRef.current && scrollRef.current.scrollTop > 0) return;
+      dragStartY.current = e.touches[0].clientY;
+      isDragging.current = true;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!isDragging.current) return;
+      const delta = e.touches[0].clientY - dragStartY.current;
+      if (delta > 0) {
+        e.preventDefault();
+        dragYRef.current = delta;
+        setDragY(delta);
+      }
+    };
+
+    const onTouchEnd = () => {
+      if (!isDragging.current) return;
+      isDragging.current = false;
+      if (dragYRef.current > 120) onClose();
+      dragYRef.current = 0;
+      setDragY(0);
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [visible, onClose]);
+
+  if (!visible || !player) return null;
+  const pct = totalUsers > 0 ? Math.round((users.length / totalUsers) * 100) : 0;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-50 bg-black/50"
+        style={{ opacity: entered ? 1 : 0, transition: "opacity 300ms ease" }}
+        onClick={onClose}
+      />
+
+      {/* Bottom sheet */}
+      <div
+        ref={sheetRef}
+        className="fixed inset-x-0 bottom-0 z-50 flex flex-col h-[92vh] rounded-t-3xl overflow-hidden bg-background"
+        style={{
+          boxShadow: "0 -6px 20px rgba(255, 255, 255, 0.08), 0 -1px 6px rgba(255, 255, 255, 0.05)",
+          transform: `translateY(${!entered ? "100%" : dragY > 0 ? `${dragY}px` : "0"})`,
+          transition: dragY > 0 ? "none" : "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
+          overscrollBehavior: "contain",
+        }}
+      >
+        {/* Drag handle */}
+        <div className="absolute top-0 inset-x-0 z-20 flex justify-center py-3 rounded-t-3xl backdrop-blur-md pointer-events-none">
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/40" />
+        </div>
+
+        {/* Scrollable content */}
+        <div ref={scrollRef} className="overflow-y-auto flex-1 min-h-0 pt-2">
+          {/* Player header */}
+          <div className="px-5 pb-3 pt-4 border-b">
+            <div className="flex items-center gap-3">
+              <PlayerAvatar player={player} size="md" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold truncate">{player.name}</p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-muted-foreground">{player.team}</span>
+                  <span className="text-[11px] text-muted-foreground/40">·</span>
+                  <span className="text-[11px] text-muted-foreground">{player.role}</span>
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-lg font-bold tabular-nums text-primary">{player.points.toFixed(1)}</p>
+                <p className="text-[10px] text-muted-foreground">pts</p>
+              </div>
+            </div>
+
+            {/* Selection stat */}
+            <div className="flex items-center gap-2 mt-3">
+              <Users className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">
+                Selected by <span className="font-semibold text-foreground">{users.length}</span> of {totalUsers} users
+              </span>
+              <Badge variant="secondary" className="text-[10px] h-5 px-1.5 ml-auto">
+                {pct}%
+              </Badge>
+            </div>
+
+            {/* Selection bar */}
+            <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+
+          {/* User list */}
+          {users.length === 0 ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              No one selected this player
+            </div>
+          ) : (
+            <div className="divide-y">
+              {users.map((u, i) => (
+                <div key={u.email} className="flex items-center gap-3 px-5 py-3">
+                  {/* Rank */}
+                  <span className="text-xs tabular-nums text-muted-foreground/60 w-5 text-center shrink-0">
+                    {i + 1}
+                  </span>
+
+                  {/* User avatar (initials) */}
+                  <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${
+                    u.asCaptain
+                      ? "bg-gold/15 text-gold ring-1 ring-gold/30"
+                      : u.asViceCaptain
+                        ? "bg-primary/15 text-primary ring-1 ring-primary/30"
+                        : "bg-muted text-muted-foreground"
+                  }`}>
+                    {u.name.charAt(0).toUpperCase()}
+                  </div>
+
+                  {/* User info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{u.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      {u.asCaptain && (
+                        <Badge variant="gold" className="text-[8px] h-3.5 px-1 gap-0.5">
+                          <Crown className="h-2 w-2" />
+                          C
+                        </Badge>
+                      )}
+                      {u.asViceCaptain && (
+                        <Badge variant="default" className="text-[8px] h-3.5 px-1 gap-0.5">
+                          <Shield className="h-2 w-2" />
+                          VC
+                        </Badge>
+                      )}
+                      {!u.asCaptain && !u.asViceCaptain && (
+                        <span className="text-[10px] text-muted-foreground">Player</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* User total points */}
+                  <div className="text-right shrink-0">
+                    <span className="text-sm font-semibold tabular-nums">
+                      {u.totalpoints.toFixed(1)}
+                    </span>
+                    <p className="text-[9px] text-muted-foreground">total pts</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -527,6 +778,7 @@ export default function PlayerStatsTab({
   const [teamFilter, setTeamFilter] = useState<string>("ALL");
   const [myXIOnly, setMyXIOnly] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("points-desc");
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
   const hasTeam = dreamTeam != null;
 
@@ -585,6 +837,15 @@ export default function PlayerStatsTab({
     const sorted = [...allStats].sort((a, b) => b.points - a.points);
     return sorted[0].points > 0 ? sorted[0] : null;
   }, [allStats]);
+
+  // Build selected-by map from leaderboard data
+  const selectedByMap = useMemo(() => buildSelectedByMap(lbRows), [lbRows]);
+  const selectedPlayer = selectedPlayerId
+    ? allStats.find((p) => p.playerId === selectedPlayerId) ?? null
+    : null;
+  const selectedByUsers = selectedPlayerId
+    ? selectedByMap.get(selectedPlayerId) ?? []
+    : [];
 
   const isLive = matchState === "In Progress" || matchState === "Live";
   const hasPoints = allStats.some((p) => p.points > 0);
@@ -765,6 +1026,7 @@ export default function PlayerStatsTab({
             player={p}
             rank={sortKey === "points-desc" ? ranks[i] : i + 1}
             showMedals={sortKey === "points-desc"}
+            onClick={() => setSelectedPlayerId(p.playerId)}
           />
         ))}
         {filtered.length === 0 && (
@@ -780,6 +1042,15 @@ export default function PlayerStatsTab({
       <p className="text-xs text-muted-foreground text-center pb-2">
         {filtered.length} of {allStats.length} players
       </p>
+
+      {/* Selected-by drawer */}
+      <SelectedByDrawer
+        open={selectedPlayerId != null}
+        onClose={() => setSelectedPlayerId(null)}
+        player={selectedPlayer}
+        users={selectedByUsers}
+        totalUsers={lbRows.length}
+      />
     </div>
   );
 }
