@@ -134,26 +134,39 @@ export default function TeamPreview({ matchId, dreamId }) {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-4">
-        <div className="space-y-2">
-          <Skeleton className="h-5 w-32" />
-          <Skeleton className="h-3 w-48" />
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <Skeleton className="h-14 rounded-lg" />
-          <Skeleton className="h-14 rounded-lg" />
-        </div>
-        <Separator />
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <Skeleton className="h-9 w-9 rounded-full" />
-            <div className="flex-1 space-y-1">
-              <Skeleton className="h-3.5 w-28" />
-              <Skeleton className="h-2.5 w-16" />
-            </div>
-            <Skeleton className="h-4 w-10" />
+      <div className="flex flex-col h-[92vh]">
+        {/* Header skeleton — matches loaded header */}
+        <div className="p-6 pb-4 pt-5 shrink-0 space-y-4">
+          <Skeleton className="h-3 w-28" />
+          <div className="flex items-baseline gap-2">
+            <Skeleton className="h-9 w-20" />
+            <Skeleton className="h-4 w-6" />
           </div>
-        ))}
+          <div className="grid grid-cols-2 gap-2">
+            <Skeleton className="h-14 rounded-lg" />
+            <Skeleton className="h-14 rounded-lg" />
+          </div>
+          <Skeleton className="h-1.5 w-full rounded-full" />
+        </div>
+        <Separator className="shrink-0" />
+        {/* Player rows skeleton — 11 players */}
+        <div className="flex-1 min-h-0 p-6 pt-4 space-y-3">
+          {Array.from({ length: 11 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <Skeleton className="h-9 w-9 rounded-full shrink-0" />
+              <div className="flex-1 space-y-1">
+                <Skeleton className="h-3.5 w-28" />
+                <Skeleton className="h-2.5 w-16" />
+              </div>
+              <Skeleton className="h-4 w-10" />
+            </div>
+          ))}
+        </div>
+        {/* Footer skeleton */}
+        <div className="border-t px-6 py-3 flex items-center justify-between shrink-0">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-20" />
+        </div>
       </div>
     );
   }
