@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { ApiMatch, ScorecardInnings } from "../types/api";
+import type { ApiMatch, ApiPlayer, ScorecardInnings } from "../types/api";
 import TeamPreview from "./TeamPreview";
+import PlayerStatsTab from "./PlayerStatsTab";
 import { apiUrl } from "../api/client";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
@@ -31,7 +32,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-type DetailTab = "scorecard" | "leaderboard";
+type DetailTab = "scorecard" | "leaderboard" | "playerstats";
 
 /** Normalizes API start date (seconds or ms) to milliseconds since epoch. */
 function matchStartTimestampMs(startDate: number): number {
@@ -349,7 +350,9 @@ export function MatchDetail() {
   const [sheetEntered, setSheetEntered] = useState(false);
   const dragStartY = useRef(0);
   const isDragging = useRef(false);
+  const dragYRef = useRef(0);
   const sheetScrollRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
 
   const isSheetOpen = previewDid != null;
 
@@ -367,24 +370,44 @@ export function MatchDetail() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSheetOpen, isMobile]);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (sheetScrollRef.current && sheetScrollRef.current.scrollTop > 0) return;
-    dragStartY.current = e.touches[0].clientY;
-    isDragging.current = true;
-  };
+  // Native non-passive touch listeners to prevent pull-to-refresh
+  useEffect(() => {
+    const el = sheetRef.current;
+    if (!el) return;
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging.current) return;
-    const delta = e.touches[0].clientY - dragStartY.current;
-    if (delta > 0) setDragY(delta);
-  };
+    const onTouchStart = (e: TouchEvent) => {
+      if (sheetScrollRef.current && sheetScrollRef.current.scrollTop > 0) return;
+      dragStartY.current = e.touches[0].clientY;
+      isDragging.current = true;
+    };
 
-  const handleTouchEnd = () => {
-    if (!isDragging.current) return;
-    isDragging.current = false;
-    if (dragY > 120) setPreviewDid(null);
-    setDragY(0);
-  };
+    const onTouchMove = (e: TouchEvent) => {
+      if (!isDragging.current) return;
+      const delta = e.touches[0].clientY - dragStartY.current;
+      if (delta > 0) {
+        e.preventDefault(); // Block pull-to-refresh
+        dragYRef.current = delta;
+        setDragY(delta);
+      }
+    };
+
+    const onTouchEnd = () => {
+      if (!isDragging.current) return;
+      isDragging.current = false;
+      if (dragYRef.current > 120) setPreviewDid(null);
+      dragYRef.current = 0;
+      setDragY(0);
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [sheetVisible]);
 
   // ── Queries ──
   const { data: allMatches = [], isLoading: loading, error: matchesError } = useMatches();
@@ -441,6 +464,19 @@ export function MatchDetail() {
     return copy;
   }, [lbRows, query]);
 
+  // Standard competition ranking: tied scores share the same rank, next rank skips
+  const lbRanks = useMemo(() => {
+    const ranks: number[] = [];
+    for (let i = 0; i < filteredSortedLbRows.length; i++) {
+      if (i === 0 || filteredSortedLbRows[i].totalpoints !== filteredSortedLbRows[i - 1].totalpoints) {
+        ranks.push(i + 1);
+      } else {
+        ranks.push(ranks[i - 1]);
+      }
+    }
+    return ranks;
+  }, [filteredSortedLbRows]);
+
   const totalPages = Math.max(1, Math.ceil(filteredSortedLbRows.length / pageSize));
   const safePage = Math.min(page, totalPages);
   const start = (safePage - 1) * pageSize;
@@ -461,7 +497,7 @@ export function MatchDetail() {
 
   if (!Number.isFinite(matchId)) {
     return (
-      <div className="container py-8">
+      <div className="container pt-8">
         <p className="text-muted-foreground">Invalid match.</p>
         <Button asChild variant="outline" className="mt-4">
           <Link to="/matches">Back to matches</Link>
@@ -471,7 +507,7 @@ export function MatchDetail() {
   }
 
   return (
-    <div className="container py-8">
+    <div className="container pt-8">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link to="/matches" className="hover:text-foreground transition-colors flex items-center gap-1 hover:no-underline">
@@ -543,15 +579,14 @@ export function MatchDetail() {
 
           {/* Bottom sheet */}
           <div
+            ref={sheetRef}
             className="fixed inset-x-0 bottom-0 z-50 flex flex-col max-h-[92vh] rounded-t-3xl overflow-hidden bg-background"
             style={{
               boxShadow: "0 -6px 20px rgba(255, 255, 255, 0.08), 0 -1px 6px rgba(255, 255, 255, 0.05)",
               transform: `translateY(${!sheetEntered ? "100%" : dragY > 0 ? `${dragY}px` : "0"})`,
               transition: dragY > 0 ? "none" : "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
+              overscrollBehavior: "contain",
             }}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
           >
             {/* Drag handle */}
             <div className="absolute top-0 inset-x-0 z-20 flex justify-center py-3 rounded-t-3xl backdrop-blur-md pointer-events-none">
@@ -616,10 +651,20 @@ export function MatchDetail() {
                     ))}
                 </div>
               </div>
-              {matchResult && (
-                <div className="mt-6 -mx-6 -mb-6 px-6 py-4 bg-linear-to-r from-primary/10 via-primary/15 to-primary/10 border-t border-primary/20 flex items-center justify-center gap-3">
-                  <span className="text-xl leading-none">🏆</span>
-                  <span className="font-bold text-primary text-base tracking-wide">{matchResult}</span>
+              {(matchResult || scRaw?.matchstatus) && (
+                <div className={`mt-6 -mx-6 -mb-6 px-6 py-3.5 border-t flex items-center justify-center gap-2.5 ${
+                  matchResult
+                    ? 'bg-linear-to-r from-primary/10 via-primary/15 to-primary/10 border-primary/20'
+                    : 'border-border/60'
+                }`}>
+                  {matchResult ? (
+                    <>
+                      <span className="text-xl leading-none">🏆</span>
+                      <span className="font-bold text-primary text-base tracking-wide">{matchResult}</span>
+                    </>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">{scRaw!.matchstatus}</span>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -630,6 +675,7 @@ export function MatchDetail() {
             <TabsList className="mb-4">
               <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
               <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+              <TabsTrigger value="playerstats">Player Stats</TabsTrigger>
             </TabsList>
 
             {/* Scorecard */}
@@ -658,11 +704,6 @@ export function MatchDetail() {
               )}
               {!scLoading && !scError && hasScorecard && (
                 <div className="space-y-4">
-                  {scRaw?.matchstatus && (
-                    <Badge variant="secondary" className="text-xs">
-                      {scRaw.matchstatus}
-                    </Badge>
-                  )}
 
                   {/* Score banner */}
                   <Card>
@@ -670,7 +711,7 @@ export function MatchDetail() {
                       <div className="flex items-center justify-around gap-4">
                         <div className="text-center">
                           <p className="text-sm font-medium text-muted-foreground mb-1">{team1Name}</p>
-                          <p className={`text-2xl font-bold tabular-nums ${innings1 && innings2 && innings1.total.runs >= innings2.total.runs ? 'text-primary' : ''}`}>
+                          <p className={`text-2xl font-bold tabular-nums ${innings1 && innings2 && innings1.total.runs >= innings2.total.runs ? 'text-foreground' : 'text-muted-foreground'}`}>
                             {innings1 ? `${innings1.total.runs}/${innings1.total.wickets}` : "—"}
                           </p>
                           {innings1 && <p className="text-xs text-muted-foreground">({innings1.total.overs} Ov)</p>}
@@ -678,7 +719,7 @@ export function MatchDetail() {
                         <span className="text-sm font-medium text-muted-foreground">VS</span>
                         <div className="text-center">
                           <p className="text-sm font-medium text-muted-foreground mb-1">{team2Name}</p>
-                          <p className={`text-2xl font-bold tabular-nums ${innings1 && innings2 && innings2.total.runs >= innings1.total.runs ? 'text-primary' : ''}`}>
+                          <p className={`text-2xl font-bold tabular-nums ${innings1 && innings2 && innings2.total.runs >= innings1.total.runs ? 'text-foreground' : 'text-muted-foreground'}`}>
                             {innings2 ? `${innings2.total.runs}/${innings2.total.wickets}` : "—"}
                           </p>
                           {innings2 && <p className="text-xs text-muted-foreground">({innings2.total.overs} Ov)</p>}
@@ -693,7 +734,7 @@ export function MatchDetail() {
                       innings={innings1}
                       teamName={team1Name}
                       label="1st Innings"
-                      defaultOpen
+                      defaultOpen={!innings2}
                     />
                   )}
                   {innings2 && (
@@ -763,7 +804,7 @@ export function MatchDetail() {
                   {/* Rows */}
                   <div className="space-y-1">
                     {pageRows.map((row, i) => {
-                      const rank = start + i + 1;
+                      const rank = lbRanks[start + i] ?? (start + i + 1);
                       const avatarUrl = base64ToBlobUrl(row.imageurl);
                       const canPreview = match.state !== "Upcoming" || (match.state === "Upcoming" && row.did === myDreamId);
                       const isTop3 = rank <= 3;
@@ -771,7 +812,7 @@ export function MatchDetail() {
                         <div
                           key={`${row.email}-${rank}`}
                           className={`grid grid-cols-[36px_1fr_auto_40px] sm:grid-cols-[36px_40px_1fr_auto_48px] gap-2 items-center px-3 py-2.5 rounded-lg transition-colors ${
-                            isTop3 ? 'bg-primary/5 border border-primary/10' : 'bg-muted/30 hover:bg-muted/50'
+                            isTop3 ? 'bg-foreground/4 border border-foreground/10' : 'bg-muted/30 hover:bg-muted/50'
                           } ${canPreview ? 'cursor-pointer' : ''}`}
                           onClick={() => { if (canPreview) setPreviewDid(row.did); }}
                         >
@@ -850,6 +891,20 @@ export function MatchDetail() {
                   </div>
                 </div>
               )}
+            </TabsContent>
+
+            {/* Player Stats */}
+            <TabsContent value="playerstats">
+              <PlayerStatsTab
+                lbRows={lbRows}
+                lbLoading={lbLoading}
+                lbError={lbError}
+                matchPlayers={(matchData?.players ?? []) as ApiPlayer[]}
+                dreamTeam={matchData?.dreamTeam ?? null}
+                innings1={innings1}
+                innings2={innings2}
+                matchState={match.state}
+              />
             </TabsContent>
           </Tabs>
         </>

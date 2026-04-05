@@ -46,15 +46,15 @@ function MatchCard({ m }: { m: ApiMatch }) {
   return (
     <Link to={`/matches/${m.matchId}`} className="group block hover:no-underline">
       <div className={`relative rounded-xl border bg-card p-4 transition-all hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 h-full ${
-        isLive ? 'border-primary/40 ring-1 ring-primary/20' : ''
+        isLive ? 'border-emerald-500/40 ring-1 ring-emerald-500/20' : ''
       }`}>
         {isLive && (
           <div className="absolute top-3 right-3 flex items-center gap-1.5">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Live</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Live</span>
           </div>
         )}
 
