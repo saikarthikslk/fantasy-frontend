@@ -9,7 +9,7 @@ import { RoleFilterTabs } from '../components/RoleFilterTabs'
 import { PlayerPoolCard } from '../components/PlayerPoolCard'
 import { SelectedAvatarStrip } from '../components/SelectedAvatarStrip'
 import { StatusBanner } from '../components/StatusBanner'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Sparkles } from 'lucide-react'
 
 interface Step1Props {
   players: ApiPlayer[]
@@ -32,6 +32,8 @@ interface Step1Props {
   onRemove: (key: string) => void
   onClearAll: () => void
   onNext: () => void
+  onSmartXI?: () => void
+  smartXILoading?: boolean
   captainId: string | null
   viceCaptainId: string | null
   apiError: string | null
@@ -41,7 +43,7 @@ export function Step1PlayerPicker({
   players, matchMeta, byId, selected, selectedList, roleCounts,
   creditsLeft, hint, squadValid, validationErrors,
   t1, t2, t1Id, t2Id, nTeam1, nTeam2,
-  onPick, onRemove, onClearAll, onNext,
+  onPick, onRemove, onClearAll, onNext, onSmartXI, smartXILoading,
   captainId, viceCaptainId, apiError,
 }: Step1Props) {
   const [roleFilter, setRoleFilter] = useState<'ALL' | FantasyRole>('WK')
@@ -165,6 +167,20 @@ export function Step1PlayerPicker({
 
           {/* Spacer */}
           <div className="flex-1" />
+
+          {/* Smart XI */}
+          {onSmartXI && (
+            <Button
+              variant="outline"
+              disabled={smartXILoading}
+              onClick={onSmartXI}
+              title="Auto-pick a balanced XI based on player credits, role balance, and team diversity"
+              className="gap-1.5 h-11 rounded-xl text-sm font-semibold"
+            >
+              <Sparkles className="h-4 w-4" />
+              {smartXILoading ? 'Picking…' : 'Smart XI'}
+            </Button>
+          )}
 
           {/* Next button */}
           <Button
