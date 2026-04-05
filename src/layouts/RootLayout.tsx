@@ -17,6 +17,7 @@ import {
   LogOut,
   Menu,
   Home,
+  User,
 } from 'lucide-react'
 
 export function RootLayout() {
@@ -27,6 +28,7 @@ export function RootLayout() {
     { to: '/', label: 'Home', icon: Home, end: true, always: true },
     { to: '/matches', label: 'Matches', icon: Swords, end: false, always: false },
     { to: '/leaderboard', label: 'Season Board', icon: Trophy, end: false, always: false },
+    { to: '/profile', label: 'Profile', icon: User, end: false, always: false },
   ]
 
   const signOut = () => {
