@@ -904,6 +904,7 @@ export function MatchDetail() {
                 innings1={innings1}
                 innings2={innings2}
                 matchState={match.state}
+                match={match}
               />
             </TabsContent>
           </Tabs>
