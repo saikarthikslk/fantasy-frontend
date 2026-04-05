@@ -28,9 +28,9 @@ export function Home() {
           </div>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight max-w-3xl leading-[1.1]">
             Pick your XI.{' '}
-            <span className="text-primary">Captain.</span>{' '}
+            <span className="text-muted-foreground/60">Captain.</span>{' '}
             Vice-captain.{' '}
-            <span className="text-primary">Points.</span>
+            <span className="text-muted-foreground/60">Points.</span>
           </h1>
           <p className="text-muted-foreground text-lg md:text-xl max-w-2xl leading-relaxed">
             Choose real fixtures, build an 11-player squad under fantasy rules,

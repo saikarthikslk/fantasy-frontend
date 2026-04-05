@@ -11,6 +11,7 @@ import {
 } from '@/fantasy/dream11Rules'
 import { playerImageUrl } from '@/api/client'
 import { useMatches, useMatch, useCreateTeam } from '@/hooks/useQueries'
+import { generateSmartXI } from '@/fantasy/smartPick'
 import { useTeamDraft } from './useTeamDraft'
 import { useHydrateEdit } from './useHydrateEdit'
 
@@ -25,7 +26,11 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
-import { Loader2, AlertCircle, Check, X, ChevronLeft } from 'lucide-react'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogFooter,
+} from '@/components/ui/dialog'
+import { Loader2, AlertCircle, Check, X, ChevronLeft, Sparkles } from 'lucide-react'
 
 // Hoisted for useSyncExternalStore (must be stable references)
 const MOBILE_MQ = '(max-width: 1023px)'
@@ -75,6 +80,41 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
   // ── Mobile 2-step wizard ──
   const [step, setStep] = useState<1 | 2>(1)
 
+  // ── Smart XI ──
+  const [smartXILoading, setSmartXILoading] = useState(false)
+  const [smartXIPicked, setSmartXIPicked] = useState(false)
+  const [smartXIPhase, setSmartXIPhase] = useState<'idle' | 'analyzing' | 'picking' | 'done'>('idle')
+
+  const handleSmartXI = useCallback(() => {
+    setSmartXILoading(true)
+    setSmartXIPhase('analyzing')
+
+    // Phase 1: "Analyzing players…" (0–1.2s)
+    setTimeout(() => setSmartXIPhase('picking'), 1200)
+
+    // Phase 2: "Building your XI…" — generate at 1.8s, reveal at 3s
+    setTimeout(() => {
+      const result = generateSmartXI(players, matchMeta)
+      if (result) {
+        const keys = new Set(result.selected.map((p) => playerKey(p)))
+        draft.setSelected(keys)
+        draft.setCaptainVice({
+          captainId: playerKey(result.captain),
+          viceCaptainId: playerKey(result.viceCaptain),
+        })
+        setSmartXIPicked(true)
+      }
+    }, 1800)
+
+    // Phase 3: Show "done" briefly, then transition
+    setTimeout(() => setSmartXIPhase('done'), 2400)
+    setTimeout(() => {
+      setSmartXIPhase('idle')
+      setSmartXILoading(false)
+      setStep(2)
+    }, 3000)
+  }, [players, matchMeta, draft])
+
   const handleSubmit = () => {
     const payload = draft.buildPayload()
     if (!payload) return
@@ -108,6 +148,53 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
     return (
       <div className="flex-1 p-6 space-y-3">
         {Array.from({ length: 10 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
+      </div>
+    )
+  }
+
+  // ── Smart XI thinking overlay ──
+  if (smartXIPhase !== 'idle') {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-5 p-6 bg-background">
+        {/* Animated icon */}
+        <div className="relative">
+          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+            {smartXIPhase === 'done'
+              ? <Check className="h-7 w-7 text-primary animate-in zoom-in-50 duration-300" />
+              : <Sparkles className="h-7 w-7 text-primary animate-pulse" />
+            }
+          </div>
+          {smartXIPhase !== 'done' && (
+            <div className="absolute inset-0 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+          )}
+        </div>
+
+        {/* Phase text */}
+        <div className="text-center space-y-1.5">
+          <p className="text-lg font-semibold animate-in fade-in duration-300">
+            {smartXIPhase === 'analyzing' && 'Analyzing players…'}
+            {smartXIPhase === 'picking' && 'Building your XI…'}
+            {smartXIPhase === 'done' && 'Smart XI ready'}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {smartXIPhase === 'analyzing' && 'Evaluating credits, roles, and form'}
+            {smartXIPhase === 'picking' && 'Picking the strongest balanced lineup'}
+            {smartXIPhase === 'done' && 'Captain and vice-captain assigned'}
+          </p>
+        </div>
+
+        {/* Progress dots */}
+        {smartXIPhase !== 'done' && (
+          <div className="flex items-center gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-pulse"
+                style={{ animationDelay: `${i * 200}ms` }}
+              />
+            ))}
+          </div>
+        )}
       </div>
     )
   }
@@ -147,6 +234,8 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
                 onRemove={draft.removePlayer}
                 onClearAll={draft.clearAll}
                 onNext={() => setStep(2)}
+                onSmartXI={handleSmartXI}
+                smartXILoading={smartXILoading}
                 captainId={draft.captainId}
                 viceCaptainId={draft.viceCaptainId}
                 apiError={apiError}
@@ -158,6 +247,8 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
                 captainId={draft.captainId}
                 viceCaptainId={draft.viceCaptainId}
                 captainViceErrors={draft.captainViceErrors}
+                smartXIPicked={smartXIPicked}
+                onDismissSmartHint={() => setSmartXIPicked(false)}
                 onSelectCaptain={(key) => {
                   draft.setCaptainVice((prev) => {
                     if (prev.captainId === key) return { ...prev, captainId: null }
@@ -196,6 +287,10 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
     saving={saving}
     success={success}
     onSubmit={handleSubmit}
+    onSmartXI={handleSmartXI}
+    smartXILoading={smartXILoading}
+    smartXIPicked={smartXIPicked}
+    onDismissSmartHint={() => setSmartXIPicked(false)}
   />
 }
 
@@ -215,14 +310,20 @@ interface DesktopProps {
   saving: boolean
   success: boolean
   onSubmit: () => void
+  onSmartXI: () => void
+  smartXILoading: boolean
+  smartXIPicked: boolean
+  onDismissSmartHint: () => void
 }
 
 function DesktopCreateTeam({
   action, onClose, draft, players, matchMeta,
   t1, t2, t1Id, t2Id, apiError, saving, success, onSubmit,
+  onSmartXI, smartXILoading, smartXIPicked, onDismissSmartHint,
 }: DesktopProps) {
   const [roleFilter, setRoleFilter] = useState<'ALL' | FantasyRole>('WK')
   const [rightWidth, setRightWidth] = useState(360)
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
 
@@ -324,9 +425,13 @@ function DesktopCreateTeam({
             <p className="text-lg font-semibold truncate">{action === 'edit' ? 'Edit' : 'Build'} your squad</p>
             <p className="text-[11px] text-muted-foreground truncate">{t1} vs {t2}</p>
           </div>
-          <Button disabled={!canSave || saving || success} onClick={onSubmit} className="gap-2 shrink-0">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : success ? <Check className="h-4 w-4" /> : null}
-            {saving ? 'Saving' : success ? 'Saved!' : 'Save squad'}
+          <Button variant="outline" disabled={smartXILoading} onClick={onSmartXI} title="Auto-pick a balanced XI based on player credits, role balance, and team diversity" className="gap-1.5 shrink-0">
+            <Sparkles className="h-4 w-4" />
+            {smartXILoading ? 'Picking…' : 'Smart XI'}
+          </Button>
+          <Button disabled={!canSave || saving || success} onClick={() => smartXIPicked ? setConfirmOpen(true) : onSubmit()} className="gap-2 shrink-0">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : success ? <Check className="h-4 w-4" /> : smartXIPicked ? <Sparkles className="h-4 w-4" /> : null}
+            {saving ? 'Saving' : success ? 'Saved!' : smartXIPicked ? 'Save Smart XI' : 'Save squad'}
           </Button>
         </div>
 
@@ -359,6 +464,17 @@ function DesktopCreateTeam({
           </div>
         </div>
       </header>
+
+      {/* Smart XI hint */}
+      {smartXIPicked && (
+        <div className="shrink-0 flex items-center gap-2 px-5 sm:px-8 py-2 bg-primary/5 border-b border-primary/15">
+          <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+          <span className="text-xs text-primary">Smart XI picked a balanced lineup for you. Feel free to swap players or change C/VC before saving.</span>
+          <button type="button" onClick={onDismissSmartHint} className="ml-auto text-primary/40 hover:text-primary cursor-pointer">
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
 
       {/* Status bar */}
       {(() => {
@@ -533,6 +649,28 @@ function DesktopCreateTeam({
           </div>
         </div>
       </div>
+
+      {/* Smart XI confirmation dialog */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Save Smart XI?
+            </DialogTitle>
+            <DialogDescription>
+              This lineup was auto-generated by Smart XI. Make sure you've reviewed the captain and vice-captain picks before locking it in.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>Go back</Button>
+            <Button onClick={() => { setConfirmOpen(false); onSubmit() }} className="gap-1.5">
+              <Sparkles className="h-3.5 w-3.5" />
+              Confirm & Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
