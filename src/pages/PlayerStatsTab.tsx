@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef, useSyncExternalStore } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import type {
   MatchLeaderboardEntry,
   MatchLbPlayer,
