@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import type { ApiMatch, ApiPlayer } from '@/types/api'
 import {
   countRoles,
-  creditsForPlayer,
   normalizeRole,
   playerKey,
   SQUAD_SIZE,

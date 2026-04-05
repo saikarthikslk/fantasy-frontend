@@ -6,7 +6,6 @@ import {
   playerKey,
   roleLabel,
   SQUAD_SIZE,
-  TOTAL_CREDITS_CAP,
   tryAddPlayer,
   type FantasyRole,
 } from '@/fantasy/dream11Rules'
@@ -217,7 +216,7 @@ function DesktopCreateTeam({
 
   const {
     selected, selectedList, byId, roleCounts, creditsLeft,
-    hint, squadValid, validationErrors, captainViceErrors, canSave,
+    hint, validationErrors, captainViceErrors, canSave,
     nTeam1, nTeam2, captainId, viceCaptainId,
     pickPlayer, clearAll,
   } = draft
