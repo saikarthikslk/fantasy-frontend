@@ -62,13 +62,14 @@ function getServerNowSnapshot(): number {
 }
 
 function formatWhen(startDate: number): string {
-  return new Date(matchStartTimestampMs(startDate)).toLocaleString(undefined, {
+  return new Date(matchStartTimestampMs(startDate)).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
     weekday: "short",
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
-  });
+  }) + " IST";
 }
 
 function base64ToBlobUrl(base64: string | null | undefined): string | null {
