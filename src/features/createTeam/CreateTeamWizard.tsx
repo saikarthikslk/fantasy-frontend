@@ -78,6 +78,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
 
   // ── Mobile 2-step wizard ──
   const [step, setStep] = useState<1 | 2>(1)
+  const [discardOpen, setDiscardOpen] = useState(false)
 
   // ── Smart XI ──
   const [smartXILoading, setSmartXILoading] = useState(false)
@@ -126,6 +127,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
 
   const handleBack = () => {
     if (step === 2) setStep(1)
+    else if (draft.selectedList.length > 0) setDiscardOpen(true)
     else onClose()
   }
 
@@ -270,6 +272,22 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
             </div>
           </div>
         </div>
+
+        {/* Discard confirmation */}
+        <Dialog open={discardOpen} onOpenChange={setDiscardOpen}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Discard selections?</DialogTitle>
+              <DialogDescription>
+                Your player selections will be lost if you go back now.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setDiscardOpen(false)}>Keep editing</Button>
+              <Button variant="destructive" onClick={() => { setDiscardOpen(false); onClose() }}>Discard</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     )
   }
@@ -324,6 +342,7 @@ function DesktopCreateTeam({
   const [roleFilter, setRoleFilter] = useState<'ALL' | FantasyRole>('WK')
   const [rightWidth, setRightWidth] = useState(360)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [discardOpen, setDiscardOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
 
@@ -416,7 +435,7 @@ function DesktopCreateTeam({
       {/* Top bar */}
       <header className="shrink-0 border-b">
         <div className="flex items-center gap-4 px-5 sm:px-8 py-4">
-          <button onClick={onClose} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0">
+          <button onClick={() => selectedList.length > 0 ? setDiscardOpen(true) : onClose()} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0">
             <ChevronLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Back</span>
           </button>
@@ -668,6 +687,22 @@ function DesktopCreateTeam({
               <Sparkles className="h-3.5 w-3.5" />
               Confirm & Save
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Discard confirmation dialog */}
+      <Dialog open={discardOpen} onOpenChange={setDiscardOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Discard selections?</DialogTitle>
+            <DialogDescription>
+              Your player selections will be lost if you go back now.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setDiscardOpen(false)}>Keep editing</Button>
+            <Button variant="destructive" onClick={() => { setDiscardOpen(false); onClose() }}>Discard</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

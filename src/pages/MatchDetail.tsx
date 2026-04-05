@@ -459,6 +459,12 @@ export function MatchDetail() {
     return "Match tied";
   }, [innings1, innings2, team1Name, team2Name, scRaw]);
 
+  const lbWinner = useMemo(() => {
+    if (!lbRows.length) return null;
+    const sorted = [...lbRows].sort((a, b) => b.totalpoints - a.totalpoints);
+    return sorted[0];
+  }, [lbRows]);
+
   const filteredSortedLbRows = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = q
@@ -631,7 +637,7 @@ export function MatchDetail() {
                     variant={match.state === "Completed" ? "secondary" : "emerald"}
                     className="mt-2"
                   >
-                    {match.status ?? match.state ?? "—"}
+                    {match.state === "Completed" ? (matchResult ?? "Completed") : (match.status ?? match.state ?? "—")}
                   </Badge>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -657,18 +663,27 @@ export function MatchDetail() {
                 </div>
               </div>
               {(matchResult || scRaw?.matchstatus) && (
-                <div className={`mt-6 -mx-6 -mb-6 px-6 py-3.5 border-t flex items-center justify-center gap-2.5 ${
+                <div className={`mt-6 -mx-6 -mb-6 px-6 py-3.5 border-t ${
                   matchResult
                     ? 'bg-linear-to-r from-primary/10 via-primary/15 to-primary/10 border-primary/20'
                     : 'border-border/60'
                 }`}>
-                  {matchResult ? (
-                    <>
-                      <span className="text-xl leading-none">🏆</span>
-                      <span className="font-bold text-primary text-base tracking-wide">{matchResult}</span>
-                    </>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">{scRaw!.matchstatus}</span>
+                  <div className="flex items-center justify-center gap-2.5">
+                    {matchResult ? (
+                      <>
+                        <span className="text-xl leading-none">🏆</span>
+                        <span className="font-bold text-primary text-base tracking-wide">{matchResult}</span>
+                      </>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">{scRaw!.matchstatus}</span>
+                    )}
+                  </div>
+                  {match.state === "Completed" && lbWinner && (
+                    <div className="flex items-center justify-center gap-2 mt-2">
+                      <span className="text-sm text-muted-foreground">Fantasy Winner:</span>
+                      <span className="text-sm font-semibold">{lbWinner.name}</span>
+                      <span className="text-xs text-muted-foreground">({lbWinner.totalpoints.toFixed(1)} pts)</span>
+                    </div>
                   )}
                 </div>
               )}
@@ -704,7 +719,11 @@ export function MatchDetail() {
               )}
               {!scLoading && !scError && !hasScorecard && (
                 <div className="flex flex-col items-center py-16 text-center">
-                  <p className="text-muted-foreground">Aree ruko ji..</p>
+                  {match.state === "Completed" && matchResult ? (
+                    <p className="text-primary font-semibold">{matchResult}</p>
+                  ) : (
+                    <p className="text-muted-foreground">Aree ruko ji..</p>
+                  )}
                 </div>
               )}
               {!scLoading && !scError && hasScorecard && (

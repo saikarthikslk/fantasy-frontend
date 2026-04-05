@@ -4,7 +4,7 @@ import {
   getMatchBucket,
   type MatchTab,
 } from '../fantasy/matchBucket'
-import { useMatches } from '@/hooks/useQueries'
+import { useMatches, useScorecard, useMatchLeaderboard } from '@/hooks/useQueries'
 import type { ApiMatch } from '../types/api'
 import { playerImageUrl } from '../api/client'
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,8 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Radio,
+  Trophy,
+  Crown,
 } from 'lucide-react'
 
 const PAGE_SIZE = 9
@@ -36,6 +38,58 @@ function formatWhen(startDate: number): string {
 }
 
 type View = 'current' | 'completed'
+
+function CompletedMatchInfo({ m }: { m: ApiMatch }) {
+  const { data: scRaw } = useScorecard(m.matchId)
+  const { data: lbRows = [] } = useMatchLeaderboard(m.matchId)
+
+  const t1 = m.team1?.teamSName ?? m.team1?.teamName ?? 'Team 1'
+  const t2 = m.team2?.teamSName ?? m.team2?.teamName ?? 'Team 2'
+
+  const matchResult = useMemo(() => {
+    if (!scRaw) return null
+    try {
+      const inn1 = scRaw.innings1 ? JSON.parse(scRaw.innings1) : null
+      const inn2 = scRaw.innings2 ? JSON.parse(scRaw.innings2) : null
+      if (!inn1 || !inn2) return scRaw.matchstatus || null
+      const r1 = inn1.total?.runs ?? 0
+      const r2 = inn2.total?.runs ?? 0
+      const w2 = inn2.total?.wickets ?? 0
+      if (r1 > r2) return `${t1} won by ${r1 - r2} runs`
+      if (r2 > r1) return `${t2} won by ${10 - w2} wickets`
+      return 'Match tied'
+    } catch {
+      return scRaw.matchstatus || null
+    }
+  }, [scRaw, t1, t2])
+
+  const lbWinner = useMemo(() => {
+    if (!lbRows.length) return null
+    return [...lbRows].sort((a, b) => b.totalpoints - a.totalpoints)[0]
+  }, [lbRows])
+
+  if (!matchResult && !lbWinner) return null
+
+  return (
+    <div className="mt-3 space-y-1.5">
+      {matchResult && (
+        <div className="flex items-center gap-1.5 rounded-md bg-primary/5 border border-primary/10 px-3 py-1.5">
+          <Trophy className="h-3 w-3 text-primary shrink-0" />
+          <p className="text-[11px] font-medium text-primary truncate">{matchResult}</p>
+        </div>
+      )}
+      {lbWinner && (
+        <div className="flex items-center gap-1.5 rounded-md bg-muted/50 px-3 py-1.5">
+          <Crown className="h-3 w-3 text-amber-500 shrink-0" />
+          <p className="text-[11px] text-muted-foreground truncate">
+            <span className="font-medium text-foreground">{lbWinner.name}</span>
+            {' '}· {lbWinner.totalpoints.toFixed(1)} pts
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function MatchCard({ m }: { m: ApiMatch }) {
   const bucket = getMatchBucket(m)
@@ -114,11 +168,7 @@ function MatchCard({ m }: { m: ApiMatch }) {
           <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0" />
         </div>
 
-        {bucket === 'completed' && m.status && (
-          <div className="mt-3 rounded-md bg-muted/50 px-3 py-1.5">
-            <p className="text-[11px] text-muted-foreground truncate">{m.status}</p>
-          </div>
-        )}
+        {bucket === 'completed' && <CompletedMatchInfo m={m} />}
       </div>
     </Link>
   )
