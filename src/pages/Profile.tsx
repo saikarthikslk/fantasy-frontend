@@ -121,7 +121,7 @@ export function Profile() {
   const displayError = error || (mutationError instanceof Error ? mutationError.message : mutationError ? 'Something went wrong' : null)
 
   const displayEmail = user?.email || emailFromToken || 'Unknown'
-  const initials = (user?.gamename?.charAt(0) ?? displayEmail.charAt(0)).toUpperCase()
+
 
   if (!token) {
     return (
