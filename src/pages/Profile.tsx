@@ -8,7 +8,14 @@ import { Input } from '@/components/ui/input'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ImageCropDialog } from '@/components/ImageCropDialog'
-import { useUserProfile, useUpdateGameName, useUploadProfilePicture } from '@/hooks/useQueries'
+import { Switch } from '@/components/ui/switch'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { useUserProfile, useUpdateGameName, useUploadProfilePicture, useUpdateAutoTeam } from '@/hooks/useQueries'
 import {
   Loader2,
   AlertCircle,
@@ -16,6 +23,8 @@ import {
   Camera,
   User,
   Pencil,
+  FlaskConical,
+  Info,
 } from 'lucide-react'
 
 function base64ToBlobUrl(base64: string | null | undefined): string | null {
@@ -49,6 +58,7 @@ export function Profile() {
   const { data: user, isLoading: loading, error: queryError } = useUserProfile(!!token)
   const updateGameNameMutation = useUpdateGameName()
   const uploadPictureMutation = useUploadProfilePicture()
+  const autoTeamMutation = useUpdateAutoTeam()
 
   const [gameName, setGameName] = useState('')
   const [savedProfileUrl, setSavedProfileUrl] = useState<string | null>(null)
@@ -265,6 +275,48 @@ export function Profile() {
               Save
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Preferences */}
+      <Card className="mt-4">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <FlaskConical className="h-4 w-4 text-muted-foreground" />
+            Preferences
+          </CardTitle>
+          <CardDescription>Experimental features you can try out</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TooltipProvider>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2 min-w-0">
+                <label htmlFor="autoteam" className="text-sm font-medium cursor-pointer">
+                  Auto-pick Smart XI
+                </label>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                      <Info className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-60 text-center">
+                    If you miss picking your team before a match, we'll auto-select a Smart XI for you so you never miss out on points.
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <Switch
+                id="autoteam"
+                checked={user?.autoteam ?? true}
+                disabled={autoTeamMutation.isPending}
+                onCheckedChange={(checked) => {
+                  autoTeamMutation.mutate(checked, {
+                    onSuccess: () => showSuccess('Preference updated!'),
+                  })
+                }}
+              />
+            </div>
+          </TooltipProvider>
         </CardContent>
       </Card>
     </div>

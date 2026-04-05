@@ -416,6 +416,8 @@ export function MatchDetail() {
   const { data: scRaw, isLoading: scLoading, error: scQueryError } = useScorecard(matchId);
   const { data: lbRows = [], isLoading: lbLoading, error: lbQueryError } = useMatchLeaderboard(matchId);
   const refreshData = useRefreshMatchData(matchId);
+  const refreshRef = useRef(refreshData);
+  refreshRef.current = refreshData;
 
   const error = matchesError ? (matchesError instanceof Error ? matchesError.message : "Failed to load") : null;
   const scError = scQueryError ? (scQueryError instanceof Error ? scQueryError.message : "Failed to load scorecard") : null;
@@ -424,18 +426,20 @@ export function MatchDetail() {
   const isTeamCreated = matchData?.dreamTeam != null;
   const myDreamId: number | null = matchData?.dreamTeam?.id ?? null;
 
-  // SSE for live refresh
-  useEffect(() => {
-    const es = new EventSource(apiUrl("/api/stream/notif/" + matchId));
-    es.addEventListener("refresh", () => refreshData());
-    es.onerror = () => {};
-    return () => { es.close(); };
-  }, [matchId, refreshData]);
-
+  // SSE for live refresh — only connect when match is in progress
   const match = useMemo(
     () => allMatches.find((m: ApiMatch) => m.matchId === matchId) ?? null,
     [allMatches, matchId],
   );
+  const isLive = match?.state === "In Progress";
+
+  useEffect(() => {
+    if (!isLive) return;
+    const es = new EventSource(apiUrl("/api/stream/notif/" + matchId));
+    es.addEventListener("refresh", () => refreshRef.current());
+    es.onerror = () => {};
+    return () => { es.close(); };
+  }, [matchId, isLive]);
 
   const innings1 = useMemo(() => parseInnings(scRaw?.innings1), [scRaw]);
   const innings2 = useMemo(() => parseInnings(scRaw?.innings2), [scRaw]);

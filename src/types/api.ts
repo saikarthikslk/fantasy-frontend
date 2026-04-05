@@ -4,6 +4,7 @@ export type ApiUser = {
   email: string
   gamename?: string
   profielpic?: string
+  autoteam?: boolean
   createdAt?: string
   updatedAt?: string
 }

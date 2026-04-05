@@ -11,7 +11,6 @@ import {
 } from '@/fantasy/dream11Rules'
 import { playerImageUrl } from '@/api/client'
 import { useMatches, useMatch, useCreateTeam } from '@/hooks/useQueries'
-import { generateSmartXI } from '@/fantasy/smartPick'
 import { useTeamDraft } from './useTeamDraft'
 import { useHydrateEdit } from './useHydrateEdit'
 
@@ -85,25 +84,26 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
   const [smartXIPicked, setSmartXIPicked] = useState(false)
   const [smartXIPhase, setSmartXIPhase] = useState<'idle' | 'analyzing' | 'picking' | 'done'>('idle')
 
+  const smartTeam = matchSelection?.smartTeam ?? null
+
   const handleSmartXI = useCallback(() => {
+    if (!smartTeam?.players?.length) return
+
     setSmartXILoading(true)
     setSmartXIPhase('analyzing')
 
     // Phase 1: "Analyzing players…" (0–1.2s)
     setTimeout(() => setSmartXIPhase('picking'), 1200)
 
-    // Phase 2: "Building your XI…" — generate at 1.8s, reveal at 3s
+    // Phase 2: "Building your XI…" — apply BE smart team at 1.8s
     setTimeout(() => {
-      const result = generateSmartXI(players, matchMeta)
-      if (result) {
-        const keys = new Set(result.selected.map((p) => playerKey(p)))
-        draft.setSelected(keys)
-        draft.setCaptainVice({
-          captainId: playerKey(result.captain),
-          viceCaptainId: playerKey(result.viceCaptain),
-        })
-        setSmartXIPicked(true)
-      }
+      const keys = new Set<string>(smartTeam.players.map((p: ApiPlayer) => playerKey(p)))
+      draft.setSelected(keys)
+      draft.setCaptainVice({
+        captainId: String(smartTeam.captain),
+        viceCaptainId: String(smartTeam.vicecaptain),
+      })
+      setSmartXIPicked(true)
     }, 1800)
 
     // Phase 3: Show "done" briefly, then transition
@@ -113,7 +113,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
       setSmartXILoading(false)
       setStep(2)
     }, 3000)
-  }, [players, matchMeta, draft])
+  }, [smartTeam, draft])
 
   const handleSubmit = () => {
     const payload = draft.buildPayload()
