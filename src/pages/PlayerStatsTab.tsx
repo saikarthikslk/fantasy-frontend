@@ -4,6 +4,7 @@ import type {
   MatchLbPlayer,
   ScorecardInnings,
   ApiPlayer,
+  ApiMatch,
 } from "@/types/api";
 import { playerImageUrl } from "@/api/client";
 import { Badge } from "@/components/ui/badge";
@@ -74,12 +75,24 @@ function normName(n: string): string {
   return n.toLowerCase().replace(/[^a-z]/g, "");
 }
 
+/** Resolve a team ID string to a short team name using match data */
+function resolveTeamLabel(teamIdStr: string, match: ApiMatch | null): string {
+  if (!match || !teamIdStr) return teamIdStr;
+  const tid = Number(teamIdStr);
+  if (match.team1?.teamId === tid)
+    return match.team1.teamSName ?? match.team1.teamName ?? teamIdStr;
+  if (match.team2?.teamId === tid)
+    return match.team2.teamSName ?? match.team2.teamName ?? teamIdStr;
+  return teamIdStr;
+}
+
 function buildPlayerStats(
   lbRows: MatchLeaderboardEntry[],
   matchPlayers: ApiPlayer[],
   dreamTeam: any | null,
   innings1: ScorecardInnings | null,
   innings2: ScorecardInnings | null,
+  match: ApiMatch | null,
 ): PlayerStat[] {
   // 1) Deduplicate players from leaderboard
   const playerMap = new Map<string, MatchLbPlayer>();
@@ -187,7 +200,7 @@ function buildPlayerStats(
     stats.push({
       playerId: pid,
       name: p.name,
-      team: p.team ?? "",
+      team: resolveTeamLabel(p.team ?? "", match),
       role: normalizeRole(p.type),
       imageId: p.url ?? "",
       points: p.points ?? 0,
@@ -495,6 +508,7 @@ export type PlayerStatsTabProps = {
   innings1: ScorecardInnings | null;
   innings2: ScorecardInnings | null;
   matchState?: string;
+  match: ApiMatch | null;
 };
 
 export default function PlayerStatsTab({
@@ -506,6 +520,7 @@ export default function PlayerStatsTab({
   innings1,
   innings2,
   matchState,
+  match,
 }: PlayerStatsTabProps) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("ALL");
@@ -517,8 +532,8 @@ export default function PlayerStatsTab({
 
   // Build normalized player stats
   const allStats = useMemo(
-    () => buildPlayerStats(lbRows, matchPlayers, dreamTeam, innings1, innings2),
-    [lbRows, matchPlayers, dreamTeam, innings1, innings2],
+    () => buildPlayerStats(lbRows, matchPlayers, dreamTeam, innings1, innings2, match),
+    [lbRows, matchPlayers, dreamTeam, innings1, innings2, match],
   );
 
   // Available teams for filter
