@@ -109,7 +109,7 @@ export function RootLayout() {
 
               <DropdownMenuContent align="end" className="w-52">
                 {navItems
-                  .filter((item) => item.always || token !== null)
+                  .filter((item) => (item.always || token !== null) && item.to !== '/profile')
                   .map((item) => (
                     <DropdownMenuItem
                       key={item.to}
@@ -119,6 +119,16 @@ export function RootLayout() {
                       <span>{item.label}</span>
                     </DropdownMenuItem>
                   ))}
+
+                {token && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => navigate('/profile')}>
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span>Profile</span>
+                    </DropdownMenuItem>
+                  </>
+                )}
 
                 <DropdownMenuSeparator />
 

@@ -181,7 +181,9 @@ export function Profile() {
         <div className="relative group mb-4">
           <Avatar className="h-28 w-28 border-4 border-background shadow-lg">
             {savedProfileUrl && <AvatarImage src={savedProfileUrl} />}
-            <AvatarFallback className="text-3xl font-bold">{initials}</AvatarFallback>
+            <AvatarFallback>
+              <Camera className="h-10 w-10 text-muted-foreground" />
+            </AvatarFallback>
           </Avatar>
 
           {/* Hover overlay to change photo */}
