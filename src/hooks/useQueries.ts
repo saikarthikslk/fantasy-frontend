@@ -7,7 +7,7 @@ import {
   fetchScorecard,
   createTeam,
 } from '@/api/matchesApi'
-import { getUserProfile, updateGameName, uploadProfilePicture } from '@/api/profileApi'
+import { getUserProfile, updateGameName, updateAutoTeam, uploadProfilePicture } from '@/api/profileApi'
 import type { CreateDreamTeamBody } from '@/types/api'
 
 // ── Query keys ──────────────────────────────────────────
@@ -92,6 +92,14 @@ export function useUploadProfilePicture() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (file: File) => uploadProfilePicture(file),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: queryKeys.userProfile }) },
+  })
+}
+
+export function useUpdateAutoTeam() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (autoteam: boolean) => updateAutoTeam(autoteam),
     onSuccess: () => { qc.invalidateQueries({ queryKey: queryKeys.userProfile }) },
   })
 }

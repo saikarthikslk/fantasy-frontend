@@ -39,6 +39,26 @@ export async function updateGameName(gameName: string): Promise<ApiUser> {
 }
 
 /**
+ * Update user's auto-team preference
+ */
+export async function updateAutoTeam(autoteam: boolean): Promise<ApiUser> {
+  const token = getToken()
+  if (!token) throw new Error('Not authenticated')
+
+  const response = await apiFetch('/api/user/upload', {
+    method: 'POST',
+    body: JSON.stringify({ name: null, image: null, autoteam }),
+  })
+
+  if (!response.ok) {
+    const err = await response.text()
+    throw new Error(err || `Failed to update preference: ${response.status}`)
+  }
+
+  return response.json()
+}
+
+/**
  * Upload user's profile picture
  */
 export async function uploadProfilePicture(file: File): Promise<ApiUser> {

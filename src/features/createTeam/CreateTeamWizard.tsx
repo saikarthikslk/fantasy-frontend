@@ -11,7 +11,6 @@ import {
 } from '@/fantasy/dream11Rules'
 import { playerImageUrl } from '@/api/client'
 import { useMatches, useMatch, useCreateTeam } from '@/hooks/useQueries'
-import { generateSmartXI } from '@/fantasy/smartPick'
 import { useTeamDraft } from './useTeamDraft'
 import { useHydrateEdit } from './useHydrateEdit'
 
@@ -79,31 +78,33 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
 
   // ── Mobile 2-step wizard ──
   const [step, setStep] = useState<1 | 2>(1)
+  const [discardOpen, setDiscardOpen] = useState(false)
 
   // ── Smart XI ──
   const [smartXILoading, setSmartXILoading] = useState(false)
   const [smartXIPicked, setSmartXIPicked] = useState(false)
   const [smartXIPhase, setSmartXIPhase] = useState<'idle' | 'analyzing' | 'picking' | 'done'>('idle')
 
+  const smartTeam = matchSelection?.smartTeam ?? null
+
   const handleSmartXI = useCallback(() => {
+    if (!smartTeam?.players?.length) return
+
     setSmartXILoading(true)
     setSmartXIPhase('analyzing')
 
     // Phase 1: "Analyzing players…" (0–1.2s)
     setTimeout(() => setSmartXIPhase('picking'), 1200)
 
-    // Phase 2: "Building your XI…" — generate at 1.8s, reveal at 3s
+    // Phase 2: "Building your XI…" — apply BE smart team at 1.8s
     setTimeout(() => {
-      const result = generateSmartXI(players, matchMeta)
-      if (result) {
-        const keys = new Set(result.selected.map((p) => playerKey(p)))
-        draft.setSelected(keys)
-        draft.setCaptainVice({
-          captainId: playerKey(result.captain),
-          viceCaptainId: playerKey(result.viceCaptain),
-        })
-        setSmartXIPicked(true)
-      }
+      const keys = new Set<string>(smartTeam.players.map((p: ApiPlayer) => playerKey(p)))
+      draft.setSelected(keys)
+      draft.setCaptainVice({
+        captainId: String(smartTeam.captain),
+        viceCaptainId: String(smartTeam.vicecaptain),
+      })
+      setSmartXIPicked(true)
     }, 1800)
 
     // Phase 3: Show "done" briefly, then transition
@@ -113,7 +114,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
       setSmartXILoading(false)
       setStep(2)
     }, 3000)
-  }, [players, matchMeta, draft])
+  }, [smartTeam, draft])
 
   const handleSubmit = () => {
     const payload = draft.buildPayload()
@@ -126,6 +127,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
 
   const handleBack = () => {
     if (step === 2) setStep(1)
+    else if (draft.selectedList.length > 0) setDiscardOpen(true)
     else onClose()
   }
 
@@ -270,6 +272,22 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
             </div>
           </div>
         </div>
+
+        {/* Discard confirmation */}
+        <Dialog open={discardOpen} onOpenChange={setDiscardOpen}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Discard selections?</DialogTitle>
+              <DialogDescription>
+                Your player selections will be lost if you go back now.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setDiscardOpen(false)}>Keep editing</Button>
+              <Button variant="destructive" onClick={() => { setDiscardOpen(false); onClose() }}>Discard</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     )
   }
@@ -324,6 +342,7 @@ function DesktopCreateTeam({
   const [roleFilter, setRoleFilter] = useState<'ALL' | FantasyRole>('WK')
   const [rightWidth, setRightWidth] = useState(360)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [discardOpen, setDiscardOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
 
@@ -416,7 +435,7 @@ function DesktopCreateTeam({
       {/* Top bar */}
       <header className="shrink-0 border-b">
         <div className="flex items-center gap-4 px-5 sm:px-8 py-4">
-          <button onClick={onClose} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0">
+          <button onClick={() => selectedList.length > 0 ? setDiscardOpen(true) : onClose()} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0">
             <ChevronLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Back</span>
           </button>
@@ -668,6 +687,22 @@ function DesktopCreateTeam({
               <Sparkles className="h-3.5 w-3.5" />
               Confirm & Save
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Discard confirmation dialog */}
+      <Dialog open={discardOpen} onOpenChange={setDiscardOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Discard selections?</DialogTitle>
+            <DialogDescription>
+              Your player selections will be lost if you go back now.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setDiscardOpen(false)}>Keep editing</Button>
+            <Button variant="destructive" onClick={() => { setDiscardOpen(false); onClose() }}>Discard</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
