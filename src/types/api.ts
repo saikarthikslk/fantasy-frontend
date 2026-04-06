@@ -36,9 +36,12 @@ export type ApiMatch = {
   endDate: number
   state?: string
   status?: string
+  teamWon?: string | null
   team1?: ApiTeam
   team2?: ApiTeam
   venueInfo?: ApiVenue
+  playerwon?: string | null
+  points?: number | null
 }
 
 /** Mirrors com.security.demo.DBmodel.PlayerEntity (JSON shape) */

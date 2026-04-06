@@ -797,7 +797,7 @@ export type PlayerStatsTabProps = {
   dreamTeam: any | null;
   innings1: ScorecardInnings | null;
   innings2: ScorecardInnings | null;
-  matchState?: string;
+  isLive?: boolean;
   match: ApiMatch | null;
 };
 
@@ -809,7 +809,7 @@ export default function PlayerStatsTab({
   dreamTeam,
   innings1,
   innings2,
-  matchState,
+  isLive = false,
   match,
 }: PlayerStatsTabProps) {
   const [search, setSearch] = useState("");
@@ -886,7 +886,6 @@ export default function PlayerStatsTab({
     ? selectedByMap.get(selectedPlayerId) ?? []
     : [];
 
-  const isLive = matchState === "In Progress" || matchState === "Live";
   const hasPoints = allStats.some((p) => p.points > 0);
 
   // ── Loading ──
