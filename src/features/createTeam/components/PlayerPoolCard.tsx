@@ -21,7 +21,7 @@ export function PlayerPoolCard({ player, isSelected, isDisabled, onClick }: Play
       disabled={isDisabled}
       className={`flex items-center gap-3 w-full text-left p-3 rounded-xl border transition-all cursor-pointer ${
         isSelected
-          ? 'border-primary/50 bg-primary/5 shadow-sm'
+          ? 'border-primary/20 bg-primary/5 shadow-sm'
           : isDisabled
           ? 'opacity-30 cursor-not-allowed'
           : 'border-transparent bg-muted/40 hover:bg-muted/70 active:scale-[0.98]'

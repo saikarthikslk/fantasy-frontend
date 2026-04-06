@@ -189,7 +189,7 @@ export default function TeamPreview({ matchId, dreamId }) {
 
   const teamCounts = Object.values(
     playerEntities.reduce((acc, p) => {
-      const name = p.team?.teamname;
+      const name = typeof p.team === "string" ? p.team : p.team?.teamname;
       if (!name) return acc;
       acc[name] = acc[name] || { name, count: 0 };
       acc[name].count++;
@@ -245,28 +245,6 @@ export default function TeamPreview({ matchId, dreamId }) {
             </div>
           ))}
         </div>
-
-        {/* Team composition bar */}
-        {teamCounts.length > 0 && (
-          <div className="flex items-center gap-2 mt-3">
-            {teamCounts.map((t, i) => (
-              <span
-                key={t.name}
-                className={`text-xs font-semibold ${i === 0 ? "text-blue-400" : "text-gold"}`}
-              >
-                {t.name} {t.count}
-              </span>
-            ))}
-            <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full rounded-full bg-blue-400"
-                style={{
-                  width: `${(teamCounts[0]?.count / playerEntities.length) * 100}%`,
-                }}
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       <Separator className="shrink-0" />
@@ -279,13 +257,27 @@ export default function TeamPreview({ matchId, dreamId }) {
       </div>
 
       {/* Footer */}
-      <div className="border-t px-6 py-3 flex items-center justify-between shrink-0">
-        <span className="text-xs text-muted-foreground">
-          {playerEntities.length} players
-        </span>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-          Preview only
+      <div className="border-t px-6 py-3 shrink-0 space-y-1.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center justify-center gap-3">
+            <span className="text-xs text-muted-foreground">
+              {playerEntities.length} players
+            </span>
+            {teamCounts.length > 0 && (
+              teamCounts.map((t, i) => (
+                <span
+                  key={t.name}
+                  className={`text-[11px] font-medium ${i === 0 ? "text-blue-400" : "text-gold"}`}
+                >
+                  {t.name}: {t.count}
+                </span>
+              ))
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+            Preview only
+          </div>
         </div>
       </div>
     </div>

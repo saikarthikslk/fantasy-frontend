@@ -431,15 +431,14 @@ export function MatchDetail() {
     () => allMatches.find((m: ApiMatch) => m.matchId === matchId) ?? null,
     [allMatches, matchId],
   );
-  const isLive = match?.state === "In Progress";
-
+  const teamCreationLocked = match != null && (match.state === "In Progress" || match.state === "Live");
   useEffect(() => {
-    if (!isLive) return;
+    if (!teamCreationLocked) return;
     const es = new EventSource(apiUrl("/api/stream/notif/" + matchId));
     es.addEventListener("refresh", () => refreshRef.current());
     es.onerror = () => {};
     return () => { es.close(); };
-  }, [matchId, isLive]);
+  }, [matchId, teamCreationLocked]);
 
   const innings1 = useMemo(() => parseInnings(scRaw?.innings1), [scRaw]);
   const innings2 = useMemo(() => parseInnings(scRaw?.innings2), [scRaw]);
@@ -449,21 +448,9 @@ export function MatchDetail() {
 
   const hasScorecard = innings1 != null || innings2 != null;
 
-  const matchResult = useMemo(() => {
-    if (!match || match.state !== "Completed") return null;
-    if (!innings1 || !innings2) return scRaw?.matchstatus ?? null;
-    if (innings1.total.runs > innings2.total.runs)
-      return `${team1Name} won by ${innings1.total.runs - innings2.total.runs} runs`;
-    if (innings2.total.runs > innings1.total.runs)
-      return `${team2Name} won by ${10 - innings2.total.wickets} wickets`;
-    return "Match tied";
-  }, [innings1, innings2, team1Name, team2Name, scRaw]);
-
-  const lbWinner = useMemo(() => {
-    if (!lbRows.length) return null;
-    const sorted = [...lbRows].sort((a, b) => b.totalpoints - a.totalpoints);
-    return sorted[0];
-  }, [lbRows]);
+  const matchResult = match?.teamWon ?? null;
+  const playerwon = match?.playerwon ?? null;
+  const playerwonPoints = match?.points ?? null;
 
   const filteredSortedLbRows = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -493,17 +480,35 @@ export function MatchDetail() {
   const start = (safePage - 1) * pageSize;
   const pageRows = filteredSortedLbRows.slice(start, start + pageSize);
 
+  // Cache blob URLs so we don't re-create them every render
+  const blobUrlCache = useRef<Map<string, string>>(new Map());
+  const avatarUrls = useMemo(() => {
+    const map = new Map<string, string | null>();
+    for (const row of pageRows) {
+      const key = row.imageurl ?? "";
+      if (!key) { map.set(key, null); continue; }
+      if (blobUrlCache.current.has(key)) {
+        map.set(key, blobUrlCache.current.get(key)!);
+      } else {
+        const url = base64ToBlobUrl(key);
+        if (url) blobUrlCache.current.set(key, url);
+        map.set(key, url);
+      }
+    }
+    return map;
+  }, [pageRows]);
+
   const t1 = match?.team1?.teamSName ?? match?.team1?.teamName ?? "Team 1";
   const t2 = match?.team2?.teamSName ?? match?.team2?.teamName ?? "Team 2";
 
   const now = useSyncExternalStore(subscribeNow, getNowSnapshot, getServerNowSnapshot);
-  // Create/Edit squad only when kickoff is under 24h away (and not after start).
+  // Show "Sugar ah?" when kickoff is more than 24h away.
   const squadEditingLocked =
     match != null &&
     (() => {
       const startMs = matchStartTimestampMs(match.startDate);
       const windowStartMs = startMs - 24 * 60 * 60 * 1000;
-      return now <= windowStartMs || now >= startMs;
+      return now <= windowStartMs;
     })();
 
   if (!Number.isFinite(matchId)) {
@@ -614,7 +619,6 @@ export function MatchDetail() {
         </>
       )}
 
-
       {!loading && match && (
         <>
           {/* Hero */}
@@ -628,16 +632,11 @@ export function MatchDetail() {
                   <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
                     {t1} <span className="text-muted-foreground font-normal">vs</span> {t2}
                   </h1>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {formatWhen(match.startDate)}
+                  <Badge variant={match.state === "Completed" ? "secondary" : "emerald"}
+                    className="mt-2">
+                      {formatWhen(match.startDate)}
                     {match.venueInfo?.ground ? ` · ${match.venueInfo.ground.length > 35 ? match.venueInfo.ground.substring(0, 35) + "..." : match.venueInfo.ground}` : ""}
                     {match.venueInfo?.city ? ` · ${match.venueInfo.city}` : ""}
-                  </p>
-                  <Badge
-                    variant={match.state === "Completed" ? "secondary" : "emerald"}
-                    className="mt-2"
-                  >
-                    {match.state === "Completed" ? (matchResult ?? "Completed") : (match.status ?? match.state ?? "—")}
                   </Badge>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -646,7 +645,7 @@ export function MatchDetail() {
                       View my squad
                     </Button>
                   )}
-                  {match.state === "Upcoming" &&
+                  {!teamCreationLocked && match.state !== "Completed" &&
                     (squadEditingLocked ? (
                       <Button type="button" disabled>
                         Sugar ah?
@@ -678,11 +677,13 @@ export function MatchDetail() {
                       <span className="text-sm text-muted-foreground">{scRaw!.matchstatus}</span>
                     )}
                   </div>
-                  {match.state === "Completed" && lbWinner && (
+                  {match.state === "Completed" && playerwon && (
                     <div className="flex items-center justify-center gap-2 mt-2">
                       <span className="text-sm text-muted-foreground">Fantasy Winner:</span>
-                      <span className="text-sm font-semibold">{lbWinner.name}</span>
-                      <span className="text-xs text-muted-foreground">({lbWinner.totalpoints.toFixed(1)} pts)</span>
+                      <span className="text-sm font-semibold">{playerwon}</span>
+                      {playerwonPoints != null && (
+                        <span className="text-xs text-muted-foreground">({playerwonPoints.toFixed(1)} pts)</span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -829,8 +830,8 @@ export function MatchDetail() {
                   <div className="space-y-1">
                     {pageRows.map((row, i) => {
                       const rank = lbRanks[start + i] ?? (start + i + 1);
-                      const avatarUrl = base64ToBlobUrl(row.imageurl);
-                      const canPreview = match.state !== "Upcoming" || (match.state === "Upcoming" && row.did === myDreamId);
+                      const avatarUrl = avatarUrls.get(row.imageurl ?? "") ?? null;
+                      const canPreview = teamCreationLocked || match.state === "Completed" || row.did === myDreamId;
                       const isTop3 = rank <= 3;
                       return (
                         <div
@@ -927,7 +928,7 @@ export function MatchDetail() {
                 dreamTeam={matchData?.dreamTeam ?? null}
                 innings1={innings1}
                 innings2={innings2}
-                matchState={match.state}
+                isLive={teamCreationLocked}
                 match={match}
               />
             </TabsContent>
