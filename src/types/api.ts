@@ -51,6 +51,12 @@ export type ApiPlayer = {
   type?: string
   /** When set by backend, used for Dream11-style credit cap. */
   credits?: number
+  points?: number | null
+  /** Playing status after lineup announced (30 min before match). */
+  category?: string | null
+  /** Playing status before lineup announced. */
+  prevcategory?: string | null
+  totalpoints?: number | null
   team?: ApiTeam
 }
 
@@ -67,6 +73,9 @@ export type ApiCustomTeam = {
 export type ApiMatchSelection = {
   players?: ApiPlayer[]
   dreamTeam?: any
+  smartTeam?: any
+  /** true once playing XI is announced (~30 min before match). */
+  isannounced?: boolean
 }
 
 export type MatchLbPlayer = {
