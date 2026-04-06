@@ -150,6 +150,35 @@ export function validateCompleteSquad(players: ApiPlayer[]): string[] {
   return errors
 }
 
+export type PlayerCategory = 'playing XI' | 'substitutes' | 'bench'
+
+/** Get effective category: use `category` when lineup is announced, else `prevcategory`. null → bench. */
+export function getEffectiveCategory(p: ApiPlayer, isAnnounced: boolean): PlayerCategory {
+  const raw = isAnnounced ? p.category : p.prevcategory
+  if (!raw) return 'bench'
+  const lower = raw.toLowerCase().trim()
+  if (lower === 'playing xi') return 'playing XI'
+  if (lower === 'substitutes') return 'substitutes'
+  return 'bench'
+}
+
+/** Group players into Playing / Substitutes / Bench buckets. */
+export function groupByCategory(
+  players: ApiPlayer[],
+  isAnnounced: boolean,
+): { playing: ApiPlayer[]; substitutes: ApiPlayer[]; bench: ApiPlayer[] } {
+  const playing: ApiPlayer[] = []
+  const substitutes: ApiPlayer[] = []
+  const bench: ApiPlayer[] = []
+  for (const p of players) {
+    const cat = getEffectiveCategory(p, isAnnounced)
+    if (cat === 'playing XI') playing.push(p)
+    else if (cat === 'substitutes') substitutes.push(p)
+    else bench.push(p)
+  }
+  return { playing, substitutes, bench }
+}
+
 export const RULES_SUMMARY_LINES = [
   `${SQUAD_SIZE} players · ${TOTAL_CREDITS_CAP} credits`,
   `WK ${ROLE_LIMITS.WK.min}–${ROLE_LIMITS.WK.max} · BAT ${ROLE_LIMITS.BAT.min}–${ROLE_LIMITS.BAT.max} · AR ${ROLE_LIMITS.AR.min}–${ROLE_LIMITS.AR.max} · BOWL ${ROLE_LIMITS.BOWL.min}–${ROLE_LIMITS.BOWL.max}`,

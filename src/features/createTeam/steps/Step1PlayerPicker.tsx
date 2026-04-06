@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { RoleFilterTabs } from '../components/RoleFilterTabs'
 import { PlayerPoolCard } from '../components/PlayerPoolCard'
+import { CategorySection } from '../components/CategorySection'
 import { SelectedAvatarStrip } from '../components/SelectedAvatarStrip'
 import { StatusBanner } from '../components/StatusBanner'
 import { ChevronRight, Sparkles } from 'lucide-react'
@@ -37,6 +38,7 @@ interface Step1Props {
   captainId: string | null
   viceCaptainId: string | null
   apiError: string | null
+  isAnnounced: boolean
 }
 
 export function Step1PlayerPicker({
@@ -44,7 +46,7 @@ export function Step1PlayerPicker({
   creditsLeft, hint, squadValid, validationErrors,
   t1, t2, t1Id, t2Id, nTeam1, nTeam2,
   onPick, onRemove, onClearAll, onNext, onSmartXI, smartXILoading,
-  captainId, viceCaptainId, apiError,
+  captainId, viceCaptainId, apiError, isAnnounced,
 }: Step1Props) {
   const [roleFilter, setRoleFilter] = useState<'ALL' | FantasyRole>('WK')
 
@@ -108,11 +110,11 @@ export function Step1PlayerPicker({
               <span className="text-xs font-semibold uppercase tracking-wider">{t1}</span>
               <Badge variant="secondary" className="text-[9px] h-4 px-1.5 ml-auto tabular-nums">{nTeam1}/7</Badge>
             </div>
-            <div className="space-y-1.5">
-              {pool.team1.length > 0 ? pool.team1.map(renderCard) : (
-                <p className="text-xs text-muted-foreground py-4 text-center">No players for this role</p>
-              )}
-            </div>
+            {pool.team1.length > 0 ? (
+              <CategorySection players={pool.team1} isAnnounced={isAnnounced} renderCard={renderCard} />
+            ) : (
+              <p className="text-xs text-muted-foreground py-4 text-center">No players for this role</p>
+            )}
           </div>
 
           {/* Team 2 */}
@@ -129,11 +131,11 @@ export function Step1PlayerPicker({
               <span className="text-xs font-semibold uppercase tracking-wider">{t2}</span>
               <Badge variant="secondary" className="text-[9px] h-4 px-1.5 ml-auto tabular-nums">{nTeam2}/7</Badge>
             </div>
-            <div className="space-y-1.5">
-              {pool.team2.length > 0 ? pool.team2.map(renderCard) : (
-                <p className="text-xs text-muted-foreground py-4 text-center">No players for this role</p>
-              )}
-            </div>
+            {pool.team2.length > 0 ? (
+              <CategorySection players={pool.team2} isAnnounced={isAnnounced} renderCard={renderCard} />
+            ) : (
+              <p className="text-xs text-muted-foreground py-4 text-center">No players for this role</p>
+            )}
           </div>
         </div>
       </div>

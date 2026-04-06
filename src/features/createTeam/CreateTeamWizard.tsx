@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ApiMatch, ApiPlayer } from '@/types/api'
 import {
   creditsForPlayer,
@@ -8,6 +8,7 @@ import {
   SQUAD_SIZE,
   tryAddPlayer,
   type FantasyRole,
+  getEffectiveCategory,
 } from '@/fantasy/dream11Rules'
 import { playerImageUrl } from '@/api/client'
 import { useMatches, useMatch, useCreateTeam } from '@/hooks/useQueries'
@@ -20,6 +21,7 @@ import { Step2CaptainPicker } from './steps/Step2CaptainPicker'
 import { StepIndicator } from './components/StepIndicator'
 
 // Desktop-shared UI
+import { CategorySection } from './components/CategorySection'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -72,6 +74,68 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
   const t2Id = matchMeta?.team2?.teamId
 
   const apiError = error || (createTeamMutation.error instanceof Error ? createTeamMutation.error.message : createTeamMutation.error ? 'Save failed' : null)
+  const isAnnounced = matchSelection?.isannounced ?? false
+
+  // ── Benched players dialog (edit mode) ──
+  const [benchedDialogOpen, setBenchedDialogOpen] = useState(false)
+  const [benchedPlayers, setBenchedPlayers] = useState<ApiPlayer[]>([])
+  const benchedChecked = useRef(false)
+
+  useEffect(() => {
+    if (action !== 'edit' || !isAnnounced || benchedChecked.current || draft.selectedList.length === 0 || players.length === 0) return
+    benchedChecked.current = true
+    const benched = draft.selectedList.filter(
+      (p) => getEffectiveCategory(p, isAnnounced) === 'bench',
+    )
+    if (benched.length > 0) {
+      setBenchedPlayers(benched)
+      setBenchedDialogOpen(true)
+    }
+  }, [action, draft.selectedList, players, isAnnounced])
+
+  const handleRemoveBenched = () => {
+    for (const p of benchedPlayers) draft.removePlayer(playerKey(p))
+    setBenchedDialogOpen(false)
+    setBenchedPlayers([])
+  }
+
+  const benchedDialog = (
+    <Dialog open={benchedDialogOpen} onOpenChange={setBenchedDialogOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-amber-500" />
+            Players moved to bench
+          </DialogTitle>
+          <DialogDescription>
+            {benchedPlayers.length === 1
+              ? 'A player you previously selected has been moved to the bench.'
+              : `${benchedPlayers.length} players you previously selected have been moved to the bench.`}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="max-h-56 overflow-y-auto space-y-1.5 py-1">
+          {benchedPlayers.map((p) => (
+            <div key={p.id} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted/40">
+              <img
+                className="h-8 w-8 rounded-full object-cover bg-muted shrink-0"
+                src={playerImageUrl(p.imageId)}
+                alt=""
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{p.name}</p>
+                <p className="text-[10px] text-muted-foreground">{p.team?.teamSName} · {normalizeRole(p.type)}</p>
+              </div>
+              <span className="text-[10px] text-amber-500 font-medium shrink-0">Bench</span>
+            </div>
+          ))}
+        </div>
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="outline" onClick={() => setBenchedDialogOpen(false)}>Keep them</Button>
+          <Button variant="destructive" onClick={handleRemoveBenched}>Remove all</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 
   // Mobile detection
   const isMobile = useSyncExternalStore(subscribeMobile, getMobileSnapshot, getMobileServerSnapshot)
@@ -127,7 +191,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
 
   const handleBack = () => {
     if (step === 2) setStep(1)
-    else if (draft.selectedList.length > 0) setDiscardOpen(true)
+    else if (action === 'new' && draft.selectedList.length > 0) setDiscardOpen(true)
     else onClose()
   }
 
@@ -205,6 +269,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
   if (isMobile) {
     return (
       <div className="flex flex-col h-full bg-background">
+        {benchedDialog}
         <StepIndicator
           step={step}
           onBack={handleBack}
@@ -241,6 +306,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
                 captainId={draft.captainId}
                 viceCaptainId={draft.viceCaptainId}
                 apiError={apiError}
+                isAnnounced={isAnnounced}
               />
             </div>
             <div className="w-1/2 h-full flex flex-col overflow-hidden">
@@ -273,13 +339,13 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
           </div>
         </div>
 
-        {/* Discard confirmation */}
+        {/* Discard confirmation (edit mode only) */}
         <Dialog open={discardOpen} onOpenChange={setDiscardOpen}>
           <DialogContent className="sm:max-w-sm">
             <DialogHeader>
-              <DialogTitle>Discard selections?</DialogTitle>
+              <DialogTitle>Discard changes?</DialogTitle>
               <DialogDescription>
-                Your player selections will be lost if you go back now.
+                Your changes will be lost if you go back now.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="gap-2 sm:gap-0">
@@ -293,7 +359,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
   }
 
   // ── Desktop layout (preserved from original CreateTeam) ──
-  return <DesktopCreateTeam
+  return <>{benchedDialog}<DesktopCreateTeam
     matchId={matchId}
     action={action}
     onClose={onClose}
@@ -309,7 +375,8 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
     smartXILoading={smartXILoading}
     smartXIPicked={smartXIPicked}
     onDismissSmartHint={() => setSmartXIPicked(false)}
-  />
+    isAnnounced={isAnnounced}
+  />{benchedDialog}</>
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -332,12 +399,13 @@ interface DesktopProps {
   smartXILoading: boolean
   smartXIPicked: boolean
   onDismissSmartHint: () => void
+  isAnnounced: boolean
 }
 
 function DesktopCreateTeam({
   action, onClose, draft, players, matchMeta,
   t1, t2, t1Id, t2Id, apiError, saving, success, onSubmit,
-  onSmartXI, smartXILoading, smartXIPicked, onDismissSmartHint,
+  onSmartXI, smartXILoading, smartXIPicked, onDismissSmartHint, isAnnounced,
 }: DesktopProps) {
   const [roleFilter, setRoleFilter] = useState<'ALL' | FantasyRole>('WK')
   const [rightWidth, setRightWidth] = useState(360)
@@ -435,7 +503,7 @@ function DesktopCreateTeam({
       {/* Top bar */}
       <header className="shrink-0 border-b">
         <div className="flex items-center gap-4 px-5 sm:px-8 py-4">
-          <button onClick={() => selectedList.length > 0 ? setDiscardOpen(true) : onClose()} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0">
+          <button onClick={() => action === 'new' && selectedList.length > 0 ? setDiscardOpen(true) : onClose()} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0">
             <ChevronLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Back</span>
           </button>
@@ -563,11 +631,11 @@ function DesktopCreateTeam({
                   <span className="text-xs font-semibold uppercase tracking-wider">{t1}</span>
                   <Badge variant="secondary" className="text-[9px] h-4 px-1.5 ml-auto tabular-nums">{nTeam1}/7</Badge>
                 </div>
-                <div className="space-y-1.5">
-                  {pool.team1.length > 0 ? pool.team1.map(renderPlayerTile) : (
-                    <p className="text-xs text-muted-foreground py-4 text-center">No players for this role</p>
-                  )}
-                </div>
+                {pool.team1.length > 0 ? (
+                  <CategorySection players={pool.team1} isAnnounced={isAnnounced} renderCard={renderPlayerTile} />
+                ) : (
+                  <p className="text-xs text-muted-foreground py-4 text-center">No players for this role</p>
+                )}
               </div>
               <div className="p-5">
                 <div className="flex items-center gap-2 mb-3">
@@ -577,11 +645,11 @@ function DesktopCreateTeam({
                   <span className="text-xs font-semibold uppercase tracking-wider">{t2}</span>
                   <Badge variant="secondary" className="text-[9px] h-4 px-1.5 ml-auto tabular-nums">{nTeam2}/7</Badge>
                 </div>
-                <div className="space-y-1.5">
-                  {pool.team2.length > 0 ? pool.team2.map(renderPlayerTile) : (
-                    <p className="text-xs text-muted-foreground py-4 text-center">No players for this role</p>
-                  )}
-                </div>
+                {pool.team2.length > 0 ? (
+                  <CategorySection players={pool.team2} isAnnounced={isAnnounced} renderCard={renderPlayerTile} />
+                ) : (
+                  <p className="text-xs text-muted-foreground py-4 text-center">No players for this role</p>
+                )}
               </div>
             </div>
           </div>
@@ -691,13 +759,13 @@ function DesktopCreateTeam({
         </DialogContent>
       </Dialog>
 
-      {/* Discard confirmation dialog */}
+      {/* Discard confirmation (edit mode only) */}
       <Dialog open={discardOpen} onOpenChange={setDiscardOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Discard selections?</DialogTitle>
+            <DialogTitle>Discard changes?</DialogTitle>
             <DialogDescription>
-              Your player selections will be lost if you go back now.
+              Your changes will be lost if you go back now.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
