@@ -19,6 +19,8 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
   Search,
   ArrowUpDown,
@@ -268,17 +270,6 @@ function PlayerAvatar({
           <span className={`${textSize} font-bold`}>{initials}</span>
         )}
       </div>
-      {(player.isCaptain || player.isViceCaptain) && (
-        <div
-          className={`absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full text-[8px] font-extrabold flex items-center justify-center ${
-            player.isCaptain
-              ? "bg-gold text-black"
-              : "bg-primary text-primary-foreground"
-          }`}
-        >
-          {player.isCaptain ? "C" : "VC"}
-        </div>
-      )}
     </div>
   );
 }
@@ -540,6 +531,143 @@ function buildSelectedByMap(
   return map;
 }
 
+function SelectedByContent({
+  player,
+  users,
+  totalUsers,
+}: {
+  player: PlayerStat;
+  users: SelectedByUser[];
+  totalUsers: number;
+}) {
+  const pct = totalUsers > 0 ? Math.round((users.length / totalUsers) * 100) : 0;
+  const captains = users.filter((u) => u.asCaptain);
+  const viceCaptains = users.filter((u) => u.asViceCaptain);
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="p-6 pb-4 pt-5 shrink-0">
+        <p className="text-[11px] text-muted-foreground tracking-wide uppercase mb-3">
+          Player · {player.role}
+        </p>
+
+        {/* Player identity */}
+        <div className="flex items-center gap-3 mb-4">
+          <PlayerAvatar player={player} size="md" />
+          <div className="flex-1 min-w-0">
+            <p className="text-lg font-bold truncate leading-tight">{player.name}</p>
+            <p className="text-[11px] text-muted-foreground">{player.team}</p>
+          </div>
+          <div className="text-right shrink-0">
+            <span className="text-3xl font-bold tabular-nums text-foreground leading-none">
+              {player.points.toFixed(1)}
+            </span>
+            <p className="text-[10px] text-muted-foreground mt-0.5">pts</p>
+          </div>
+        </div>
+
+        {/* Captain / VC chips */}
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <div className="flex items-center gap-2.5 rounded-lg border px-3 py-2.5 bg-gold/5 border-gold/20">
+            <div className="h-6 w-6 rounded-full text-[10px] font-extrabold flex items-center justify-center shrink-0 bg-gold text-black">
+              C
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium tabular-nums">{captains.length}</p>
+              <p className="text-[10px] text-gold/60">as captain</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 rounded-lg border px-3 py-2.5 bg-primary/5 border-primary/20">
+            <div className="h-6 w-6 rounded-full text-[10px] font-extrabold flex items-center justify-center shrink-0 bg-primary text-primary-foreground">
+              VC
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium tabular-nums">{viceCaptains.length}</p>
+              <p className="text-[10px] text-primary/60">as vice-captain</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Selection bar */}
+        <div className="flex items-center gap-2">
+          <Users className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <span className="text-xs font-semibold">{users.length}</span>
+          <span className="text-xs text-muted-foreground">of {totalUsers}</span>
+          <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <span className="text-xs font-semibold tabular-nums">{pct}%</span>
+        </div>
+      </div>
+
+      <Separator className="shrink-0" />
+
+      {/* User list */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-6 pt-4 pb-2">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+          Selected by
+        </p>
+        {users.length === 0 ? (
+          <div className="py-12 text-center text-sm text-muted-foreground">
+            No one selected this player
+          </div>
+        ) : (
+          <div>
+            {users.map((u, i) => (
+              <div key={u.email} className="flex items-center gap-3 py-2">
+                {/* User avatar */}
+                <div className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${
+                  u.asCaptain
+                    ? "ring-2 ring-gold bg-gold/10 text-gold"
+                    : u.asViceCaptain
+                      ? "ring-2 ring-primary bg-primary/10 text-primary"
+                      : "ring-1 ring-border bg-muted text-muted-foreground"
+                }`}>
+                  {u.name.charAt(0).toUpperCase()}
+                </div>
+
+                {/* User info */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{u.name}</p>
+                  {!u.asCaptain && !u.asViceCaptain && (
+                    <p className="text-[10px] text-muted-foreground">Player</p>
+                  )}
+                  {u.asCaptain && (
+                    <p className="text-[10px] text-gold/60">Captain · 2x pts</p>
+                  )}
+                  {u.asViceCaptain && (
+                    <p className="text-[10px] text-primary/60">Vice-captain · 1.5x pts</p>
+                  )}
+                </div>
+
+                {/* Points */}
+                <span className="text-sm font-semibold tabular-nums shrink-0">
+                  {u.totalpoints.toFixed(1)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="border-t px-6 py-3 flex items-center justify-between shrink-0">
+        <span className="text-xs text-muted-foreground">
+          {users.length} users
+        </span>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+          Selection details
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SelectedByDrawer({
   open,
   onClose,
@@ -616,134 +744,45 @@ function SelectedByDrawer({
     };
   }, [visible, onClose]);
 
-  if (!visible || !player) return null;
-  const pct = totalUsers > 0 ? Math.round((users.length / totalUsers) * 100) : 0;
+  if (!player) return null;
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-50 bg-black/50"
-        style={{ opacity: entered ? 1 : 0, transition: "opacity 300ms ease" }}
-        onClick={onClose}
-      />
+      {/* Desktop: side sheet */}
+      <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+        <SheetContent side="right" className="p-0 flex flex-col overflow-hidden sm:max-w-md max-sm:hidden">
+          <SheetTitle className="sr-only">Player Details</SheetTitle>
+          <SelectedByContent player={player} users={users} totalUsers={totalUsers} />
+        </SheetContent>
+      </Sheet>
 
-      {/* Bottom sheet */}
-      <div
-        ref={sheetRef}
-        className="fixed inset-x-0 bottom-0 z-50 flex flex-col h-[92vh] rounded-t-3xl overflow-hidden bg-background"
-        style={{
-          boxShadow: "0 -6px 20px rgba(255, 255, 255, 0.08), 0 -1px 6px rgba(255, 255, 255, 0.05)",
-          transform: `translateY(${!entered ? "100%" : dragY > 0 ? `${dragY}px` : "0"})`,
-          transition: dragY > 0 ? "none" : "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
-          overscrollBehavior: "contain",
-        }}
-      >
-        {/* Drag handle */}
-        <div className="absolute top-0 inset-x-0 z-20 flex justify-center py-3 rounded-t-3xl backdrop-blur-md pointer-events-none">
-          <div className="w-10 h-1 rounded-full bg-muted-foreground/40" />
-        </div>
-
-        {/* Scrollable content */}
-        <div ref={scrollRef} className="overflow-y-auto flex-1 min-h-0 pt-2">
-          {/* Player header */}
-          <div className="px-5 pb-3 pt-4 border-b">
-            <div className="flex items-center gap-3">
-              <PlayerAvatar player={player} size="md" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate">{player.name}</p>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-muted-foreground">{player.team}</span>
-                  <span className="text-[11px] text-muted-foreground/40">·</span>
-                  <span className="text-[11px] text-muted-foreground">{player.role}</span>
-                </div>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-lg font-bold tabular-nums text-primary">{player.points.toFixed(1)}</p>
-                <p className="text-[10px] text-muted-foreground">pts</p>
-              </div>
+      {/* Mobile: bottom drawer */}
+      {visible && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/50 sm:hidden"
+            style={{ opacity: entered ? 1 : 0, transition: "opacity 300ms ease" }}
+            onClick={onClose}
+          />
+          <div
+            ref={sheetRef}
+            className="fixed inset-x-0 bottom-0 z-50 flex flex-col h-[92vh] rounded-t-3xl overflow-hidden bg-background sm:hidden"
+            style={{
+              boxShadow: "0 -6px 20px rgba(255, 255, 255, 0.08), 0 -1px 6px rgba(255, 255, 255, 0.05)",
+              transform: `translateY(${!entered ? "100%" : dragY > 0 ? `${dragY}px` : "0"})`,
+              transition: dragY > 0 ? "none" : "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
+              overscrollBehavior: "contain",
+            }}
+          >
+            <div className="absolute top-0 inset-x-0 z-20 flex justify-center py-3 rounded-t-3xl backdrop-blur-md pointer-events-none">
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/40" />
             </div>
-
-            {/* Selection stat */}
-            <div className="flex items-center gap-2 mt-3">
-              <Users className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">
-                Selected by <span className="font-semibold text-foreground">{users.length}</span> of {totalUsers} users
-              </span>
-              <Badge variant="secondary" className="text-[10px] h-5 px-1.5 ml-auto">
-                {pct}%
-              </Badge>
-            </div>
-
-            {/* Selection bar */}
-            <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{ width: `${pct}%` }}
-              />
+            <div ref={scrollRef} className="overflow-y-auto flex-1 min-h-0 pt-2">
+              <SelectedByContent player={player} users={users} totalUsers={totalUsers} />
             </div>
           </div>
-
-          {/* User list */}
-          {users.length === 0 ? (
-            <div className="py-12 text-center text-sm text-muted-foreground">
-              No one selected this player
-            </div>
-          ) : (
-            <div className="divide-y">
-              {users.map((u, i) => (
-                <div key={u.email} className="flex items-center gap-3 px-5 py-3">
-                  {/* Rank */}
-                  <span className="text-xs tabular-nums text-muted-foreground/60 w-5 text-center shrink-0">
-                    {i + 1}
-                  </span>
-
-                  {/* User avatar (initials) */}
-                  <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${
-                    u.asCaptain
-                      ? "bg-gold/15 text-gold ring-1 ring-gold/30"
-                      : u.asViceCaptain
-                        ? "bg-primary/15 text-primary ring-1 ring-primary/30"
-                        : "bg-muted text-muted-foreground"
-                  }`}>
-                    {u.name.charAt(0).toUpperCase()}
-                  </div>
-
-                  {/* User info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{u.name}</p>
-                    <div className="flex items-center gap-1.5">
-                      {u.asCaptain && (
-                        <Badge variant="gold" className="text-[8px] h-3.5 px-1 gap-0.5">
-                          <Crown className="h-2 w-2" />
-                          C
-                        </Badge>
-                      )}
-                      {u.asViceCaptain && (
-                        <Badge variant="default" className="text-[8px] h-3.5 px-1 gap-0.5">
-                          <Shield className="h-2 w-2" />
-                          VC
-                        </Badge>
-                      )}
-                      {!u.asCaptain && !u.asViceCaptain && (
-                        <span className="text-[10px] text-muted-foreground">Player</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* User total points */}
-                  <div className="text-right shrink-0">
-                    <span className="text-sm font-semibold tabular-nums">
-                      {u.totalpoints.toFixed(1)}
-                    </span>
-                    <p className="text-[9px] text-muted-foreground">total pts</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+        </>
+      )}
     </>
   );
 }
