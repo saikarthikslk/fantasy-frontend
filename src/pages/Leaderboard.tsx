@@ -43,16 +43,15 @@ function base64ToBlobUrl(base64: string | null | undefined): string | null {
 function MatchStatsPopover({ stats }: { stats: OverallLeaderboardStat[] }) {
   const sorted = [...stats].sort((a, b) => b.timestamp - a.timestamp)
   return (
-    <div className="p-4 bg-muted/50">
-      <p className="text-[11px] font-semibold text-muted-foreground mb-2 px-1">Match-by-match breakdown</p>
-      <div className="grid grid-cols-[1fr_auto_auto] text-xs font-medium text-muted-foreground mb-2 px-1 gap-x-3">
+    <div className="border-t bg-muted/30 px-4 sm:px-6 py-3">
+      <div className="grid grid-cols-[1fr_auto_auto] text-[11px] font-medium text-muted-foreground mb-1.5 gap-x-4">
         <span>Fixture</span>
-        <span className="text-center">Finish</span>
+        <span className="text-center">Rank</span>
         <span className="text-right">Pts</span>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1">
         {sorted.map((s) => (
-          <div key={s.matchid} className="grid grid-cols-[1fr_auto_auto] items-center text-sm bg-background rounded-md p-2 gap-x-3">
+          <div key={s.matchid} className="grid grid-cols-[1fr_auto_auto] items-center text-xs py-1.5 gap-x-4 border-b border-border/40 last:border-0">
             <div className="flex items-center gap-1 min-w-0 overflow-hidden">
               <img
                 src={playerImageUrl(s.t1.imageId!)}
@@ -60,18 +59,18 @@ function MatchStatsPopover({ stats }: { stats: OverallLeaderboardStat[] }) {
                 className="h-4 w-4 rounded-full shrink-0"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
               />
-              <span className="text-xs truncate">{s.t1.teamSName}</span>
-              <span className="text-xs text-muted-foreground shrink-0">v</span>
+              <span className="truncate">{s.t1.teamSName}</span>
+              <span className="text-muted-foreground shrink-0">v</span>
               <img
                 src={playerImageUrl(s.t2.imageId!)}
                 alt=""
                 className="h-4 w-4 rounded-full shrink-0"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
               />
-              <span className="text-xs truncate">{s.t2.teamSName}</span>
+              <span className="truncate">{s.t2.teamSName}</span>
             </div>
-            <span className="text-center text-xs shrink-0">#{s.position}</span>
-            <span className="text-right text-xs font-semibold tabular-nums shrink-0">{s.points.toFixed(1)}</span>
+            <span className="text-center text-muted-foreground shrink-0">#{s.position}</span>
+            <span className="text-right font-semibold tabular-nums shrink-0">{s.points.toFixed(1)}</span>
           </div>
         ))}
       </div>
@@ -90,10 +89,10 @@ const LeaderboardRow = memo(function LeaderboardRow({
   const avatarUrl = base64ToBlobUrl(row.imageurl)
 
   return (
-    <tr className="group">
+    <tr className={`group ${expanded ? 'bg-muted/20' : ''}`}>
       <td colSpan={6} className="p-0">
         <div
-          className={`flex items-center gap-3 px-3 py-2.5 transition-colors cursor-pointer hover:bg-muted/30 ${expanded ? 'bg-muted/20' : ''}`}
+          className="flex items-center gap-3 px-3 py-2.5 transition-colors cursor-pointer hover:bg-muted/30"
           onClick={() => setExpanded(!expanded)}
         >
           <span className="w-8 shrink-0 text-center">
@@ -103,24 +102,18 @@ const LeaderboardRow = memo(function LeaderboardRow({
               <span className="text-sm text-muted-foreground tabular-nums">{rank}</span>
             )}
           </span>
-          <Avatar className="h-8 w-8 shrink-0">
+          <Avatar className="h-8 w-8 shrink-0 hidden sm:flex">
             {avatarUrl && <AvatarImage src={avatarUrl} />}
             <AvatarFallback className="text-xs">{row.name?.charAt(0)?.toUpperCase() ?? '?'}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <span className="text-sm font-medium block truncate">{row.name}</span>
-            <span className="text-xs text-muted-foreground block truncate">{row.email}</span>
+            <span className="text-xs text-muted-foreground block truncate sm:hidden">{row.stats?.length ?? 0} played</span>
+            <span className="text-xs text-muted-foreground hidden sm:block truncate">{row.email}</span>
           </div>
-          <Badge variant="secondary" className="shrink-0">{row.stats?.length ?? 0}</Badge>
+          <Badge variant="secondary" className="shrink-0 hidden sm:inline-flex">{row.stats?.length ?? 0}</Badge>
           <span className="text-sm font-semibold tabular-nums w-16 text-right shrink-0">{row.totalpoints.toFixed(1)}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 shrink-0"
-            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded) }}
-          >
-            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </Button>
+          <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${expanded ? 'rotate-180' : ''}`} />
         </div>
         {expanded && row.stats && row.stats.length > 0 && (
           <MatchStatsPopover stats={row.stats} />
@@ -317,12 +310,12 @@ export function Leaderboard() {
                   <th className="p-0">
                     <div className="flex items-center gap-3 px-3 py-2.5 text-xs font-medium text-muted-foreground">
                       <span className="w-8 shrink-0 text-center">#</span>
-                      <span className="w-8 shrink-0"></span>
+                      <span className="w-8 shrink-0 hidden sm:block"></span>
                       <button type="button" className="flex-1 text-left flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => onSort('name')}>
                         Name
                         {sortKey === 'name' && (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
                       </button>
-                      <button type="button" className="shrink-0 flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => onSort('matches')}>
+                      <button type="button" className="shrink-0 hidden sm:flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => onSort('matches')}>
                         Played
                         {sortKey === 'matches' && (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
                       </button>

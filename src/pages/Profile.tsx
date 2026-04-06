@@ -10,6 +10,11 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ImageCropDialog } from '@/components/ImageCropDialog'
 import { Switch } from '@/components/ui/switch'
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -288,35 +293,50 @@ export function Profile() {
           <CardDescription>Experimental features you can try out</CardDescription>
         </CardHeader>
         <CardContent>
-          <TooltipProvider>
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2 min-w-0">
-                <label htmlFor="autoteam" className="text-sm font-medium cursor-pointer">
-                  Auto-pick Smart XI
-                </label>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <label htmlFor="autoteam" className="text-sm font-medium cursor-pointer">
+                Auto-pick Smart XI
+              </label>
+              {/* Tooltip for desktop hover */}
+              <TooltipProvider delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button type="button" className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                    <span className="hidden sm:inline-flex text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
                       <Info className="h-3.5 w-3.5" />
-                    </button>
+                    </span>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-60 text-center">
                     If you miss picking your team before a match, we'll auto-select a Smart XI for you so you never miss out on points.
                   </TooltipContent>
                 </Tooltip>
-              </div>
-              <Switch
-                id="autoteam"
-                checked={user?.autoteam ?? true}
-                disabled={autoTeamMutation.isPending}
-                onCheckedChange={(checked) => {
-                  autoTeamMutation.mutate(checked, {
-                    onSuccess: () => showSuccess('Preference updated!'),
-                  })
-                }}
-              />
+              </TooltipProvider>
+              {/* Popover for mobile tap */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="sm:hidden text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    <Info className="h-3.5 w-3.5" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent side="top" className="max-w-60 text-center">
+                  If you miss picking your team before a match, we'll auto-select a Smart XI for you so you never miss out on points.
+                </PopoverContent>
+              </Popover>
             </div>
-          </TooltipProvider>
+            <Switch
+              id="autoteam"
+              checked={user?.autoteam ?? true}
+              disabled={autoTeamMutation.isPending}
+              onCheckedChange={(checked) => {
+                autoTeamMutation.mutate(checked, {
+                  onSuccess: () => showSuccess('Preference updated!'),
+                })
+              }}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>
