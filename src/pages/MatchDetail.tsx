@@ -503,7 +503,7 @@ export function MatchDetail() {
     (() => {
       const startMs = matchStartTimestampMs(match.startDate);
       const windowStartMs = startMs - 24 * 60 * 60 * 1000;
-      return now <= windowStartMs || now >= startMs;
+      return now <= windowStartMs || now >= startMs || match.state === "Upcoming";
     })();
 
   if (!Number.isFinite(matchId)) {
