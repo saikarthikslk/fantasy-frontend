@@ -496,14 +496,15 @@ export function MatchDetail() {
   const t1 = match?.team1?.teamSName ?? match?.team1?.teamName ?? "Team 1";
   const t2 = match?.team2?.teamSName ?? match?.team2?.teamName ?? "Team 2";
 
-  const now = useSyncExternalStore(subscribeNow, getNowSnapshot, getServerNowSnapshot);
+  // const now = useSyncExternalStore(subscribeNow, getNowSnapshot, getServerNowSnapshot);
   // Create/Edit squad only when kickoff is under 24h away (and not after start).
   const squadEditingLocked =
     match != null &&
     (() => {
-      const startMs = matchStartTimestampMs(match.startDate);
-      const windowStartMs = startMs - 24 * 60 * 60 * 1000;
-      return now <= windowStartMs || now >= startMs || match.state === "Upcoming";
+      // const startMs = matchStartTimestampMs(match.startDate);
+      // const windowStartMs = startMs - 24 * 60 * 60 * 1000;
+      // return now <= windowStartMs || now >= startMs 
+      return match.state !== "Upcoming";
     })();
 
   if (!Number.isFinite(matchId)) {
