@@ -435,12 +435,11 @@ export function MatchDetail() {
   const isLive = match?.state === "In Progress";
 
   useEffect(() => {
-    if (!isLive) return;
     const es = new EventSource(apiUrl("/api/stream/notif/" + matchId));
     es.addEventListener("refresh", () => refreshRef.current());
     es.onerror = () => {};
     return () => { es.close(); };
-  }, [matchId, isLive]);
+  }, [matchId]);
 
   const innings1 = useMemo(() => parseInnings(scRaw?.innings1), [scRaw]);
   const innings2 = useMemo(() => parseInnings(scRaw?.innings2), [scRaw]);
