@@ -24,7 +24,6 @@ import { StepIndicator, TeamDots } from './components/StepIndicator'
 // Desktop-shared UI
 import { CategorySection } from './components/CategorySection'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
@@ -298,9 +297,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
                 squadValid={draft.squadValid}
                 validationErrors={draft.validationErrors}
                 t1={t1} t2={t2} t1Id={t1Id} t2Id={t2Id}
-                nTeam1={draft.nTeam1} nTeam2={draft.nTeam2}
                 onPick={draft.pickPlayer}
-                onRemove={draft.removePlayer}
                 onClearAll={draft.clearAll}
                 onNext={() => setStep(2)}
                 onSmartXI={handleSmartXI}

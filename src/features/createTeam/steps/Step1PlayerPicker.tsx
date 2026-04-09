@@ -25,10 +25,7 @@ interface Step1Props {
   t2: string
   t1Id: number | undefined
   t2Id: number | undefined
-  nTeam1: number
-  nTeam2: number
   onPick: (p: ApiPlayer) => void
-  onRemove: (key: string) => void
   onClearAll: () => void
   onNext: () => void
   onSmartXI?: () => void
@@ -42,8 +39,8 @@ interface Step1Props {
 export function Step1PlayerPicker({
   players, matchMeta, byId, selected, selectedList, roleCounts,
   creditsLeft, hint, squadValid, validationErrors,
-  t1, t2, t1Id, t2Id, nTeam1, nTeam2,
-  onPick, onRemove, onClearAll, onNext, onSmartXI, smartXILoading,
+  t1, t2, t1Id, t2Id,
+  onPick, onClearAll, onNext, onSmartXI, smartXILoading,
   apiError, isAnnounced,
 }: Step1Props) {
   const [roleFilter, setRoleFilter] = useState<'ALL' | FantasyRole>('WK')
