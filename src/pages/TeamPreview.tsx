@@ -16,14 +16,28 @@ function assignRole(index) {
   return "BOWL";
 }
 
+const ROLE_NORMALIZE = {
+  wk: "WK", keeper: "WK", wicketkeeper: "WK", "wicket keeper": "WK",
+  bat: "BAT", batsman: "BAT", batsmen: "BAT", batter: "BAT",
+  ar: "AR", allrounder: "AR", "all-rounder": "AR", "all rounder": "AR",
+  bowl: "BOWL", bowler: "BOWL",
+};
+
+function normalizeRole(type, index) {
+  if (!type) return assignRole(index);
+  const key = String(type).toLowerCase().replace(/[-_\s]/g, "");
+  if (["WK", "BAT", "AR", "BOWL"].includes(type)) return type;
+  return ROLE_NORMALIZE[key] ?? assignRole(index);
+}
+
 function groupByRole(players, captainId, vcId) {
   const groups = { WK: [], BAT: [], AR: [], BOWL: [] };
   players.forEach((p, i) => {
-    const role = p.type || assignRole(i);
-    groups[role]?.push({
+    const role = normalizeRole(p.type, i);
+    groups[role].push({
       ...p,
-      isCaptain: p.playerid === captainId,
-      isViceCaptain: p.playerid === vcId,
+      isCaptain: String(p.playerid) === String(captainId),
+      isViceCaptain: String(p.playerid) === String(vcId),
     });
   });
   return groups;
@@ -105,12 +119,18 @@ function RoleGroup({ role, players }) {
   );
 }
 
-export default function TeamPreview({ matchId, dreamId }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function TeamPreview({ matchId, dreamId, lbEntry = null, teamNames = {} }: { matchId: number; dreamId: number; lbEntry?: any; teamNames?: Record<string, string> }) {
+  const [data, setData] = useState(lbEntry);
+  const [loading, setLoading] = useState(!lbEntry);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (lbEntry) {
+      setData(lbEntry);
+      setLoading(false);
+      setError(null);
+      return;
+    }
     const token = getToken();
     setLoading(true);
     setError(null);
@@ -130,7 +150,7 @@ export default function TeamPreview({ matchId, dreamId }) {
         setError(e.message);
         setLoading(false);
       });
-  }, [matchId, dreamId]);
+  }, [matchId, dreamId, lbEntry]);
 
   if (loading) {
     return (
@@ -182,17 +202,22 @@ export default function TeamPreview({ matchId, dreamId }) {
   }
 
   const { captain, vcaptain, playerEntities = [] } = data;
-  const groups = groupByRole(playerEntities, captain, vcaptain);
-  const totalPoints = playerEntities.reduce((sum, p) => sum + (p.points ?? 0), 0);
-  const cap = playerEntities.find((p) => p.playerid === captain);
-  const vc = playerEntities.find((p) => p.playerid === vcaptain);
+  const resolveTeam = (t) => {
+    if (!t) return "";
+    const key = typeof t === "object" ? String(t.teamId ?? t.teamid ?? "") : String(t);
+    return teamNames[key] ?? (typeof t === "object" ? (t.teamSName ?? t.teamName ?? t.teamname ?? key) : key);
+  };
+  const players = playerEntities.map((p) => ({ ...p, team: resolveTeam(p.team) }));
+  const groups = groupByRole(players, captain, vcaptain);
+  const totalPoints = players.reduce((sum, p) => sum + (p.points ?? 0), 0);
+  const cap = players.find((p) => String(p.playerid) === String(captain));
+  const vc = players.find((p) => String(p.playerid) === String(vcaptain));
 
   const teamCounts = Object.values(
-    playerEntities.reduce((acc, p) => {
-      const name = typeof p.team === "string" ? p.team : p.team?.teamname;
-      if (!name) return acc;
-      acc[name] = acc[name] || { name, count: 0 };
-      acc[name].count++;
+    players.reduce((acc, p) => {
+      if (!p.team) return acc;
+      acc[p.team] = acc[p.team] || { name: p.team, count: 0 };
+      acc[p.team].count++;
       return acc;
     }, {})
   );

@@ -11,6 +11,7 @@ import {
   getEffectiveCategory,
 } from '@/fantasy/dream11Rules'
 import { playerImageUrl } from '@/api/client'
+import { getTeamColors } from '@/fantasy/teamColors'
 import { useMatches, useMatch, useCreateTeam } from '@/hooks/useQueries'
 import { useTeamDraft } from './useTeamDraft'
 import { useHydrateEdit } from './useHydrateEdit'
@@ -18,7 +19,7 @@ import { useHydrateEdit } from './useHydrateEdit'
 // Steps (mobile)
 import { Step1PlayerPicker } from './steps/Step1PlayerPicker'
 import { Step2CaptainPicker } from './steps/Step2CaptainPicker'
-import { StepIndicator } from './components/StepIndicator'
+import { StepIndicator, TeamDots } from './components/StepIndicator'
 
 // Desktop-shared UI
 import { CategorySection } from './components/CategorySection'
@@ -275,6 +276,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
           onBack={handleBack}
           title={step === 1 ? 'Select Players' : 'Choose C & VC'}
           subtitle={`${t1} vs ${t2}`}
+          teamCounts={step === 1 ? { t1, t2, nTeam1: draft.nTeam1, nTeam2: draft.nTeam2 } : undefined}
         />
 
         {/* Slide container — both steps always mounted */}
@@ -478,13 +480,14 @@ function DesktopCreateTeam({
     const role = normalizeRole(p.type)
     const res = on ? ({ ok: true } as const) : tryAddPlayer(p, selected, byId, matchMeta)
     const disabled = !on && !res.ok
+    const colors = getTeamColors(p.team?.teamSName)
     return (
       <button
         key={pk}
         type="button"
         onClick={() => pickPlayer(p)}
         className={`flex items-center gap-3 w-full text-left p-3 rounded-xl border transition-all cursor-pointer ${
-          on ? 'border-primary/50 bg-primary/5' : disabled ? 'opacity-30 cursor-not-allowed' : 'border-transparent bg-muted/40 hover:bg-muted/70'
+          on ? colors.selected : disabled ? 'opacity-30 cursor-not-allowed' : 'border-transparent bg-muted/40 hover:bg-muted/70'
         }`}
       >
         <img className="h-10 w-10 rounded-full object-cover bg-muted shrink-0" src={playerImageUrl(p.imageId)} alt="" loading="lazy" />
@@ -493,7 +496,7 @@ function DesktopCreateTeam({
           <p className="text-[11px] text-muted-foreground">{role}</p>
         </div>
         <span className="text-sm font-semibold tabular-nums shrink-0 text-muted-foreground">{cr.toFixed(1)}</span>
-        {on && <Check className="h-4 w-4 text-primary shrink-0" />}
+        {on && <Check className={`h-4 w-4 shrink-0 ${colors.check}`} />}
       </button>
     )
   }
@@ -545,9 +548,9 @@ function DesktopCreateTeam({
             ))}
           </div>
           <Separator orientation="vertical" className="h-6" />
-          <div className="flex items-center gap-2 shrink-0 text-[11px] text-muted-foreground">
-            <span className="tabular-nums">{t1} {nTeam1}/7</span>
-            <span className="tabular-nums">{t2} {nTeam2}/7</span>
+          <div className="flex flex-col gap-0.5 shrink-0">
+            <TeamDots label={t1} count={nTeam1} max={7} filledClass={getTeamColors(t1).dot} />
+            <TeamDots label={t2} count={nTeam2} max={7} filledClass={getTeamColors(t2).dot} />
           </div>
         </div>
       </header>
@@ -623,13 +626,12 @@ function DesktopCreateTeam({
           {/* Two team columns */}
           <div key={roleFilter} className="flex-1 overflow-y-scroll">
             <div className="grid grid-cols-2 divide-x divide-border">
-              <div className="p-5">
-                <div className="flex items-center gap-2 mb-3">
+              <div className="px-5 pt-4 pb-3">
+                <div className="flex items-center gap-2 mb-2.5">
                   {matchMeta?.team1?.imageId && (
                     <img src={playerImageUrl(matchMeta.team1.imageId)} alt="" className="h-5 w-5 rounded-full object-cover bg-muted" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                   )}
                   <span className="text-xs font-semibold uppercase tracking-wider">{t1}</span>
-                  <Badge variant="secondary" className="text-[9px] h-4 px-1.5 ml-auto tabular-nums">{nTeam1}/7</Badge>
                 </div>
                 {pool.team1.length > 0 ? (
                   <CategorySection players={pool.team1} isAnnounced={isAnnounced} renderCard={renderPlayerTile} />
@@ -637,13 +639,12 @@ function DesktopCreateTeam({
                   <p className="text-xs text-muted-foreground py-4 text-center">No players for this role</p>
                 )}
               </div>
-              <div className="p-5">
-                <div className="flex items-center gap-2 mb-3">
+              <div className="px-5 pt-4 pb-3">
+                <div className="flex items-center gap-2 mb-2.5">
                   {matchMeta?.team2?.imageId && (
                     <img src={playerImageUrl(matchMeta.team2.imageId)} alt="" className="h-5 w-5 rounded-full object-cover bg-muted" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                   )}
                   <span className="text-xs font-semibold uppercase tracking-wider">{t2}</span>
-                  <Badge variant="secondary" className="text-[9px] h-4 px-1.5 ml-auto tabular-nums">{nTeam2}/7</Badge>
                 </div>
                 {pool.team2.length > 0 ? (
                   <CategorySection players={pool.team2} isAnnounced={isAnnounced} renderCard={renderPlayerTile} />
@@ -716,9 +717,9 @@ function DesktopCreateTeam({
                       </span>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                    <span className="text-[13px] font-medium truncate">{p.name}</span>
-                    <span className="text-[10px] text-muted-foreground shrink-0">{role}</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[13px] font-medium truncate block">{p.name}</span>
+                    <span className="text-[10px] text-muted-foreground">{p.team?.teamSName ?? p.team?.teamName ?? ''} · {role}</span>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <button type="button" onClick={(e) => { e.stopPropagation(); selectCaptain(pk) }}

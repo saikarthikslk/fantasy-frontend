@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react'
 import { playerImageUrl } from '@/api/client'
 import { creditsForPlayer, normalizeRole } from '@/fantasy/dream11Rules'
+import { getTeamColors } from '@/fantasy/teamColors'
 import type { ApiPlayer } from '@/types/api'
 
 interface PlayerPoolCardProps {
@@ -13,6 +14,7 @@ interface PlayerPoolCardProps {
 export function PlayerPoolCard({ player, isSelected, isDisabled, onClick }: PlayerPoolCardProps) {
   const cr = creditsForPlayer(player)
   const role = normalizeRole(player.type)
+  const colors = getTeamColors(player.team?.teamSName)
 
   return (
     <button
@@ -21,7 +23,7 @@ export function PlayerPoolCard({ player, isSelected, isDisabled, onClick }: Play
       disabled={isDisabled}
       className={`flex items-center gap-3 w-full text-left p-3 rounded-xl border transition-all cursor-pointer ${
         isSelected
-          ? 'border-primary/20 bg-primary/5 shadow-sm'
+          ? colors.selected
           : isDisabled
           ? 'opacity-30 cursor-not-allowed'
           : 'border-transparent bg-muted/40 hover:bg-muted/70 active:scale-[0.98]'
@@ -38,7 +40,7 @@ export function PlayerPoolCard({ player, isSelected, isDisabled, onClick }: Play
         <p className="text-[11px] text-muted-foreground">{role}</p>
       </div>
       <span className="text-sm font-semibold tabular-nums shrink-0 text-muted-foreground">{cr.toFixed(1)}</span>
-      {isSelected && <Check className="h-4 w-4 text-primary shrink-0" />}
+      {isSelected && <Check className={`h-4 w-4 shrink-0 ${colors.check}`} />}
     </button>
   )
 }

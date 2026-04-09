@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import { Link, useParams } from "react-router-dom";
 import type { ApiMatch, ApiPlayer, ScorecardInnings } from "../types/api";
 import TeamPreview from "./TeamPreview";
+import TeamComparison from "./TeamComparison";
 import PlayerStatsTab from "./PlayerStatsTab";
 import { apiUrl } from "../api/client";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -33,6 +34,8 @@ import {
 } from "lucide-react";
 
 type DetailTab = "scorecard" | "leaderboard" | "playerstats";
+
+
 
 /** Normalizes API start date (seconds or ms) to milliseconds since epoch. */
 function matchStartTimestampMs(startDate: number): number {
@@ -332,11 +335,13 @@ export function MatchDetail() {
   const { matchId: mid } = useParams<{ matchId: string }>();
   const matchId = Number(mid);
 
-  const [previewDid, setPreviewDid] = useState<number | null>(null);
+  const [sheetDid, setSheetDid] = useState<number | null>(null);
+  const [sheetTab, setSheetTab] = useState<"squad" | "compare">("squad");
   const [tab, setTab] = useState<DetailTab>("scorecard");
+  const tabsRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(15);
 
   // Mobile bottom-sheet detection
   const isMobile = useSyncExternalStore(
@@ -355,7 +360,7 @@ export function MatchDetail() {
   const sheetScrollRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
 
-  const isSheetOpen = previewDid != null;
+  const isSheetOpen = sheetDid != null;
 
   useEffect(() => {
     if (isSheetOpen && isMobile) {
@@ -395,7 +400,7 @@ export function MatchDetail() {
     const onTouchEnd = () => {
       if (!isDragging.current) return;
       isDragging.current = false;
-      if (dragYRef.current > 120) setPreviewDid(null);
+      if (dragYRef.current > 120) setSheetDid(null);
       dragYRef.current = 0;
       setDragY(0);
     };
@@ -425,6 +430,21 @@ export function MatchDetail() {
 
   const isTeamCreated = matchData?.dreamTeam != null;
   const myDreamId: number | null = matchData?.dreamTeam?.id ?? null;
+  const myLbEntry = useMemo(
+    () => lbRows.find((r) => r.did === myDreamId) ?? null,
+    [lbRows, myDreamId],
+  );
+  const sheetLbEntry = useMemo(
+    () => sheetDid != null ? lbRows.find((r) => r.did === sheetDid) ?? null : null,
+    [lbRows, sheetDid],
+  );
+  const sheetLbRank = useMemo(() => {
+    if (!sheetLbEntry) return 0;
+    const sorted = [...lbRows].sort((a, b) => b.totalpoints - a.totalpoints);
+    const idx = sorted.indexOf(sheetLbEntry);
+    return idx >= 0 ? idx + 1 : 0;
+  }, [lbRows, sheetLbEntry]);
+  const canShowCompare = sheetDid != null && sheetDid !== myDreamId && myLbEntry != null && sheetLbEntry != null;
 
   // SSE for live refresh — only connect when match is in progress
   const match = useMemo(
@@ -447,6 +467,7 @@ export function MatchDetail() {
   const team2Name = useMemo(() => resolveTeamName(match, scRaw?.team2, "Team 2"), [match, scRaw]);
 
   const hasScorecard = innings1 != null || innings2 != null;
+  const currentInnings = scRaw?.innings ?? 1; // which innings is active (1 or 2)
 
   const matchResult = match?.teamWon ?? null;
   const playerwon = match?.playerwon ?? null;
@@ -500,6 +521,13 @@ export function MatchDetail() {
 
   const t1 = match?.team1?.teamSName ?? match?.team1?.teamName ?? "Team 1";
   const t2 = match?.team2?.teamSName ?? match?.team2?.teamName ?? "Team 2";
+
+  const teamNames = useMemo(() => {
+    const m: Record<string, string> = {};
+    if (match?.team1) m[String(match.team1.teamId)] = match.team1.teamSName ?? match.team1.teamName ?? "Team 1";
+    if (match?.team2) m[String(match.team2.teamId)] = match.team2.teamSName ?? match.team2.teamName ?? "Team 2";
+    return m;
+  }, [match]);
 
   const now = useSyncExternalStore(subscribeNow, getNowSnapshot, getServerNowSnapshot);
   // Show "Sugar ah?" when kickoff is more than 24h away.
@@ -572,14 +600,41 @@ export function MatchDetail() {
         </div>
       )}
 
-      {/* Team preview — desktop: Radix sheet, mobile: custom bottom-sheet */}
+      {/* Sheet — desktop: Radix side-sheet, mobile: custom bottom-sheet */}
       {!isMobile && (
-        <Sheet open={previewDid != null} onOpenChange={(open) => { if (!open) setPreviewDid(null) }}>
+        <Sheet open={isSheetOpen} onOpenChange={(open) => { if (!open) setSheetDid(null) }}>
           <SheetContent side="right" className="p-0 flex flex-col overflow-hidden sm:max-w-md">
-            <SheetTitle className="sr-only">Squad Preview</SheetTitle>
-            {previewDid != null && (
-              <TeamPreview matchId={matchId} dreamId={previewDid} />
+            <SheetTitle className="sr-only">
+              {sheetTab === "compare" ? "Compare Teams" : "Squad Preview"}
+            </SheetTitle>
+            {/* Tab toggle — only when viewing someone else's team */}
+            {canShowCompare && (
+              <div className="relative flex backdrop-blur-md bg-white/10 border border-white/15 rounded-full p-0.5 mx-4 mt-14 shrink-0">
+                <div
+                  className="absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-full bg-primary shadow-sm transition-transform duration-300 ease-out"
+                  style={{ transform: sheetTab === "compare" ? "translateX(calc(100% + 4px))" : "translateX(0)" }}
+                />
+                <button type="button" className={`flex-1 text-[13px] font-medium py-2 rounded-full relative z-10 cursor-pointer transition-colors duration-200 ${sheetTab === "squad" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setSheetTab("squad")}>
+                  Their Squad
+                </button>
+                <button type="button" className={`flex-1 text-[13px] font-medium py-2 rounded-full relative z-10 cursor-pointer transition-colors duration-200 ${sheetTab === "compare" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setSheetTab("compare")}>
+                  Compare
+                </button>
+              </div>
             )}
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {sheetDid != null && sheetTab === "squad" && (
+                <TeamPreview matchId={matchId} dreamId={sheetDid} lbEntry={sheetLbEntry} teamNames={teamNames} />
+              )}
+              {sheetTab === "compare" && canShowCompare && (
+                <TeamComparison
+                  myEntry={myLbEntry!}
+                  theirEntry={sheetLbEntry!}
+                  theirRank={sheetLbRank}
+                  teamNames={teamNames}
+                />
+              )}
+            </div>
           </SheetContent>
         </Sheet>
       )}
@@ -590,13 +645,13 @@ export function MatchDetail() {
           <div
             className="fixed inset-0 z-50 bg-black/50"
             style={{ opacity: sheetEntered ? 1 : 0, transition: "opacity 300ms ease" }}
-            onClick={() => setPreviewDid(null)}
+            onClick={() => setSheetDid(null)}
           />
 
           {/* Bottom sheet */}
           <div
             ref={sheetRef}
-            className="fixed inset-x-0 bottom-0 z-50 flex flex-col max-h-[92vh] rounded-t-3xl overflow-hidden bg-background"
+            className="fixed inset-x-0 bottom-0 z-50 flex flex-col h-[92vh] rounded-t-3xl overflow-hidden bg-background"
             style={{
               boxShadow: "0 -6px 20px rgba(255, 255, 255, 0.08), 0 -1px 6px rgba(255, 255, 255, 0.05)",
               transform: `translateY(${!sheetEntered ? "100%" : dragY > 0 ? `${dragY}px` : "0"})`,
@@ -609,10 +664,34 @@ export function MatchDetail() {
               <div className="w-10 h-1 rounded-full bg-muted-foreground/40" />
             </div>
 
+            {/* Tab toggle — only when viewing someone else's team */}
+            {canShowCompare && (
+              <div className="relative flex backdrop-blur-md bg-white/10 border border-white/15 rounded-full p-0.5 mx-4 mt-10 mb-1 shrink-0 z-10">
+                <div
+                  className="absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-full bg-primary shadow-sm transition-transform duration-300 ease-out"
+                  style={{ transform: sheetTab === "compare" ? "translateX(calc(100% + 4px))" : "translateX(0)" }}
+                />
+                <button type="button" className={`flex-1 text-[13px] font-medium py-2 rounded-full relative z-10 cursor-pointer transition-colors duration-200 ${sheetTab === "squad" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setSheetTab("squad")}>
+                  Their Squad
+                </button>
+                <button type="button" className={`flex-1 text-[13px] font-medium py-2 rounded-full relative z-10 cursor-pointer transition-colors duration-200 ${sheetTab === "compare" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setSheetTab("compare")}>
+                  Compare
+                </button>
+              </div>
+            )}
+
             {/* Scrollable content */}
             <div ref={sheetScrollRef} className="overflow-y-auto flex-1 min-h-0 pt-2">
-              {previewDid != null && (
-                <TeamPreview matchId={matchId} dreamId={previewDid} />
+              {sheetDid != null && sheetTab === "squad" && (
+                <TeamPreview matchId={matchId} dreamId={sheetDid} lbEntry={sheetLbEntry} teamNames={teamNames} />
+              )}
+              {sheetTab === "compare" && canShowCompare && (
+                <TeamComparison
+                  myEntry={myLbEntry!}
+                  theirEntry={sheetLbEntry!}
+                  theirRank={sheetLbRank}
+                  teamNames={teamNames}
+                />
               )}
             </div>
           </div>
@@ -641,9 +720,9 @@ export function MatchDetail() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {isTeamCreated && myDreamId != null && (
-                    <Button variant="outline" onClick={() => setPreviewDid(myDreamId)}>
-                      View my squad
-                    </Button>
+                  <Button variant="outline" onClick={() => { setSheetDid(myDreamId); setSheetTab("squad"); }}>
+                    View my squad
+                  </Button>
                   )}
                   {!teamCreationLocked && match.state !== "Completed" &&
                     (squadEditingLocked ? (
@@ -692,7 +771,10 @@ export function MatchDetail() {
           </Card>
 
           {/* Tabs */}
-          <Tabs value={tab} onValueChange={(v) => setTab(v as DetailTab)}>
+          <Tabs ref={tabsRef} value={tab} onValueChange={(v) => {
+            setTab(v as DetailTab);
+            tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}>
             <TabsList className="mb-4">
               <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
               <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
@@ -759,7 +841,7 @@ export function MatchDetail() {
                       innings={innings1}
                       teamName={team1Name}
                       label="1st Innings"
-                      defaultOpen={!innings2}
+                      defaultOpen={currentInnings === 1}
                     />
                   )}
                   {innings2 && (
@@ -767,7 +849,7 @@ export function MatchDetail() {
                       innings={innings2}
                       teamName={team2Name}
                       label="2nd Innings"
-                      defaultOpen
+                      defaultOpen={currentInnings === 2}
                     />
                   )}
                 </div>
@@ -812,6 +894,7 @@ export function MatchDetail() {
                       <SelectContent>
                         <SelectItem value="5">5 rows</SelectItem>
                         <SelectItem value="10">10 rows</SelectItem>
+                        <SelectItem value="15">15 rows</SelectItem>
                         <SelectItem value="20">20 rows</SelectItem>
                       </SelectContent>
                     </Select>
@@ -833,13 +916,14 @@ export function MatchDetail() {
                       const avatarUrl = avatarUrls.get(row.imageurl ?? "") ?? null;
                       const canPreview = teamCreationLocked || match.state === "Completed" || row.did === myDreamId;
                       const isTop3 = rank <= 3;
+                      const isMyRow = row.did === myDreamId;
                       return (
                         <div
                           key={`${row.email}-${rank}`}
                           className={`grid grid-cols-[36px_1fr_auto_40px] sm:grid-cols-[36px_40px_1fr_auto_48px] gap-2 items-center px-3 py-2.5 rounded-lg transition-colors ${
-                            isTop3 ? 'bg-foreground/4 border border-foreground/10' : 'bg-muted/30 hover:bg-muted/50'
+                            isMyRow ? 'bg-primary/6 border border-primary/15' : isTop3 ? 'bg-foreground/4 border border-foreground/10' : 'bg-muted/30 hover:bg-muted/50'
                           } ${canPreview ? 'cursor-pointer' : ''}`}
-                          onClick={() => { if (canPreview) setPreviewDid(row.did); }}
+                          onClick={() => { if (canPreview && row.did != null) { setSheetDid(row.did); setSheetTab("squad"); } }}
                         >
                           {/* Rank */}
                           <span className={`text-sm tabular-nums font-semibold ${
@@ -857,14 +941,24 @@ export function MatchDetail() {
                           </div>
 
                           {/* Name */}
-                          <span className="text-sm font-medium truncate">{row.name}</span>
+                          <div className="min-w-0">
+                            <span className="text-sm font-medium truncate block">{row.name}</span>
+                            {isMyRow && <span className="text-[10px] text-primary font-medium">You</span>}
+                          </div>
 
                           {/* Points */}
-                          <span className={`text-right tabular-nums ${isTop3 ? 'text-sm font-bold text-primary' : 'text-sm font-semibold'}`}>
-                            {row.totalpoints.toFixed(1)}
-                          </span>
+                          <div className="text-right">
+                            <span className={`tabular-nums ${isTop3 ? 'text-sm font-bold text-primary' : 'text-sm font-semibold'}`}>
+                              {row.totalpoints.toFixed(1)}
+                            </span>
+                            {rank !== 1 && filteredSortedLbRows[0] && (
+                              <p className="text-[10px] tabular-nums text-muted-foreground/60 leading-tight">
+                                {(row.totalpoints - filteredSortedLbRows[0].totalpoints).toFixed(1)}
+                              </p>
+                            )}
+                          </div>
 
-                          {/* Preview */}
+                          {/* Actions */}
                           <div className="flex justify-center">
                             {canPreview && (
                               <Button
@@ -874,7 +968,7 @@ export function MatchDetail() {
                                 disabled={row.did == null}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (row.did != null) setPreviewDid(row.did);
+                                  if (row.did != null) { setSheetDid(row.did); setSheetTab("squad"); }
                                 }}
                               >
                                 <Eye className="h-3.5 w-3.5" />
@@ -891,19 +985,16 @@ export function MatchDetail() {
                     )}
                   </div>
 
-                  {/* Pagination */}
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <p className="text-sm text-muted-foreground">
-                      Showing {pageRows.length === 0 ? 0 : start + 1}–{Math.min(start + pageRows.length, filteredSortedLbRows.length)} of {filteredSortedLbRows.length}
-                    </p>
-                    <div className="flex items-center gap-1">
+                  {/* Pagination — only show when more than one page */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-1">
                       <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage(1)} disabled={safePage <= 1}>
                         <ChevronsLeft className="h-4 w-4" />
                       </Button>
                       <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage <= 1}>
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
-                      <span className="text-sm px-3">
+                      <span className="text-sm px-3 tabular-nums">
                         {safePage} / {totalPages}
                       </span>
                       <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}>
@@ -913,7 +1004,7 @@ export function MatchDetail() {
                         <ChevronsRight className="h-4 w-4" />
                       </Button>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
             </TabsContent>
