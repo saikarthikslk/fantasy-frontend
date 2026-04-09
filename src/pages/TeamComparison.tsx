@@ -228,7 +228,7 @@ export default function TeamComparison({
                   <Av url={p.url} name={p.name} className="h-8 w-8" />
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-medium truncate">{p.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{ROLE_LABELS[p.type] ?? p.type}</p>
+                    <p className="text-[10px] text-muted-foreground">{teamNames[String(p.team)] ?? p.team} · {ROLE_LABELS[p.type] ?? p.type}</p>
                   </div>
                   <span className="text-[12px] font-semibold tabular-nums">{p.points?.toFixed(1)}</span>
                 </div>
