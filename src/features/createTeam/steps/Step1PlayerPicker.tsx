@@ -2,13 +2,11 @@ import { useState, useMemo } from 'react'
 import type { ApiMatch, ApiPlayer } from '@/types/api'
 import { normalizeRole, playerKey, tryAddPlayer, SQUAD_SIZE, type FantasyRole } from '@/fantasy/dream11Rules'
 import { playerImageUrl } from '@/api/client'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { RoleFilterTabs } from '../components/RoleFilterTabs'
 import { PlayerPoolCard } from '../components/PlayerPoolCard'
 import { CategorySection } from '../components/CategorySection'
-import { SelectedAvatarStrip } from '../components/SelectedAvatarStrip'
 import { StatusBanner } from '../components/StatusBanner'
 import { ChevronRight, Sparkles } from 'lucide-react'
 
@@ -46,7 +44,7 @@ export function Step1PlayerPicker({
   creditsLeft, hint, squadValid, validationErrors,
   t1, t2, t1Id, t2Id, nTeam1, nTeam2,
   onPick, onRemove, onClearAll, onNext, onSmartXI, smartXILoading,
-  captainId, viceCaptainId, apiError, isAnnounced,
+  apiError, isAnnounced,
 }: Step1Props) {
   const [roleFilter, setRoleFilter] = useState<'ALL' | FantasyRole>('WK')
 
@@ -97,8 +95,8 @@ export function Step1PlayerPicker({
       <div className="flex-1 overflow-y-auto min-h-0">
         <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-border">
           {/* Team 1 */}
-          <div className="p-3">
-            <div className="flex items-center gap-2 mb-2.5">
+          <div className="px-3 pt-3 pb-2">
+            <div className="flex items-center gap-2 mb-2">
               {matchMeta?.team1?.imageId && (
                 <img
                   src={playerImageUrl(matchMeta.team1.imageId)}
@@ -108,7 +106,6 @@ export function Step1PlayerPicker({
                 />
               )}
               <span className="text-xs font-semibold uppercase tracking-wider">{t1}</span>
-              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 ml-auto tabular-nums">{nTeam1}/7</Badge>
             </div>
             {pool.team1.length > 0 ? (
               <CategorySection players={pool.team1} isAnnounced={isAnnounced} renderCard={renderCard} />
@@ -118,8 +115,8 @@ export function Step1PlayerPicker({
           </div>
 
           {/* Team 2 */}
-          <div className="p-3">
-            <div className="flex items-center gap-2 mb-2.5">
+          <div className="px-3 pt-3 pb-2">
+            <div className="flex items-center gap-2 mb-2">
               {matchMeta?.team2?.imageId && (
                 <img
                   src={playerImageUrl(matchMeta.team2.imageId)}
@@ -129,7 +126,6 @@ export function Step1PlayerPicker({
                 />
               )}
               <span className="text-xs font-semibold uppercase tracking-wider">{t2}</span>
-              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 ml-auto tabular-nums">{nTeam2}/7</Badge>
             </div>
             {pool.team2.length > 0 ? (
               <CategorySection players={pool.team2} isAnnounced={isAnnounced} renderCard={renderCard} />
@@ -142,14 +138,6 @@ export function Step1PlayerPicker({
 
       {/* Sticky bottom bar */}
       <div className="shrink-0 border-t bg-background/95 backdrop-blur-sm">
-        {/* Avatar strip */}
-        <SelectedAvatarStrip
-          selectedList={selectedList}
-          captainId={captainId}
-          viceCaptainId={viceCaptainId}
-          onRemove={onRemove}
-        />
-
         {/* Stats + Next CTA */}
         <div className="flex items-center gap-3 px-4 py-3">
           {/* Progress */}

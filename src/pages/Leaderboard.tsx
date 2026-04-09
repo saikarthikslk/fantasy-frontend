@@ -131,7 +131,7 @@ export function Leaderboard() {
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(15)
 
   const filteredSorted = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -296,6 +296,7 @@ export function Leaderboard() {
               <SelectContent>
                 <SelectItem value="5">5 rows</SelectItem>
                 <SelectItem value="10">10 rows</SelectItem>
+                <SelectItem value="15">15 rows</SelectItem>
                 <SelectItem value="20">20 rows</SelectItem>
                 <SelectItem value="50">50 rows</SelectItem>
               </SelectContent>
@@ -343,19 +344,16 @@ export function Leaderboard() {
             </table>
           </div>
 
-          {/* Pagination */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
-            <p className="text-sm text-muted-foreground">
-              Showing {pageRows.length === 0 ? 0 : start + 1}–{Math.min(start + pageRows.length, filteredSorted.length)} of {filteredSorted.length}
-            </p>
-            <div className="flex items-center gap-1">
+          {/* Pagination — only show when more than one page */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-1 mt-4">
               <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage(1)} disabled={safePage <= 1}>
                 <ChevronsLeft className="h-4 w-4" />
               </Button>
               <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage <= 1}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-sm px-3">{safePage} / {totalPages}</span>
+              <span className="text-sm px-3 tabular-nums">{safePage} / {totalPages}</span>
               <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -363,7 +361,7 @@ export function Leaderboard() {
                 <ChevronsRight className="h-4 w-4" />
               </Button>
             </div>
-          </div>
+          )}
         </>
       )}
     </div>

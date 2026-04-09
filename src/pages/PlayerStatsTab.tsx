@@ -820,6 +820,7 @@ export default function PlayerStatsTab({
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
   const hasTeam = dreamTeam != null;
+  const matchStarted = isLive || match?.state === "Completed";
 
   // Build normalized player stats
   const allStats = useMemo(
@@ -1064,7 +1065,7 @@ export default function PlayerStatsTab({
             player={p}
             rank={sortKey === "points-desc" ? ranks[i] : i + 1}
             showMedals={sortKey === "points-desc"}
-            onClick={() => setSelectedPlayerId(p.playerId)}
+            onClick={matchStarted ? () => setSelectedPlayerId(p.playerId) : undefined}
           />
         ))}
         {filtered.length === 0 && (
@@ -1082,13 +1083,15 @@ export default function PlayerStatsTab({
       </p>
 
       {/* Selected-by drawer */}
-      <SelectedByDrawer
-        open={selectedPlayerId != null}
-        onClose={() => setSelectedPlayerId(null)}
-        player={selectedPlayer}
-        users={selectedByUsers}
-        totalUsers={lbRows.length}
-      />
+      {matchStarted && (
+        <SelectedByDrawer
+          open={selectedPlayerId != null}
+          onClose={() => setSelectedPlayerId(null)}
+          player={selectedPlayer}
+          users={selectedByUsers}
+          totalUsers={lbRows.length}
+        />
+      )}
     </div>
   );
 }
