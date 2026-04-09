@@ -617,7 +617,7 @@ function SelectedByContent({
           </div>
         ) : (
           <div>
-            {users.map((u, i) => (
+            {users.map((u) => (
               <div key={u.email} className="flex items-center gap-3 py-2">
                 {/* User avatar */}
                 <div className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${
