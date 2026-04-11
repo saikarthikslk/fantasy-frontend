@@ -709,6 +709,9 @@ export function MatchDetail() {
                   theirEntry={sheetLbEntry!}
                   theirRank={sheetLbRank}
                   teamNames={teamNames}
+                  lbRows={lbRows}
+                  innings1={innings1}
+                  innings2={innings2}
                 />
               )}
             </div>
@@ -767,6 +770,9 @@ export function MatchDetail() {
                   theirEntry={sheetLbEntry!}
                   theirRank={sheetLbRank}
                   teamNames={teamNames}
+                  lbRows={lbRows}
+                  innings1={innings1}
+                  innings2={innings2}
                 />
               )}
             </div>
@@ -896,7 +902,7 @@ export function MatchDetail() {
                       <div className="flex items-center justify-around gap-4">
                         <div className="text-center">
                           <p className="text-sm font-medium text-muted-foreground mb-1">{team1Name}</p>
-                          <p className={`text-2xl font-bold tabular-nums ${innings1 && innings2 && innings1.total.runs >= innings2.total.runs ? 'text-foreground' : 'text-muted-foreground'}`}>
+                          <p className={`text-2xl font-bold tabular-nums ${currentInnings === 1 ? 'text-foreground' : 'text-muted-foreground'}`}>
                             {innings1 ? `${innings1.total.runs}/${innings1.total.wickets}` : "—"}
                           </p>
                           {innings1 && <p className="text-xs text-muted-foreground">({innings1.total.overs} Ov)</p>}
@@ -904,7 +910,7 @@ export function MatchDetail() {
                         <span className="text-sm font-medium text-muted-foreground">VS</span>
                         <div className="text-center">
                           <p className="text-sm font-medium text-muted-foreground mb-1">{team2Name}</p>
-                          <p className={`text-2xl font-bold tabular-nums ${innings1 && innings2 && innings2.total.runs >= innings1.total.runs ? 'text-foreground' : 'text-muted-foreground'}`}>
+                          <p className={`text-2xl font-bold tabular-nums ${currentInnings === 2 ? 'text-foreground' : 'text-muted-foreground'}`}>
                             {innings2 ? `${innings2.total.runs}/${innings2.total.wickets}` : "—"}
                           </p>
                           {innings2 && <p className="text-xs text-muted-foreground">({innings2.total.overs} Ov)</p>}
