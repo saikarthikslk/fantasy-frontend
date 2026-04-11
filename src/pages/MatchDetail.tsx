@@ -357,6 +357,8 @@ export function MatchDetail() {
   const dragStartY = useRef(0);
   const isDragging = useRef(false);
   const dragYRef = useRef(0);
+  const startedInScrollArea = useRef(false);
+  const scrolledDuringTouch = useRef(false);
   const sheetScrollRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
 
@@ -390,12 +392,28 @@ export function MatchDetail() {
     if (!el) return;
 
     const onTouchStart = (e: TouchEvent) => {
-      if (sheetScrollRef.current && sheetScrollRef.current.scrollTop > 0) return;
+      const scrollEl = sheetScrollRef.current;
+      const inScrollArea = scrollEl?.contains(e.target as Node);
+      startedInScrollArea.current = !!inScrollArea;
+      scrolledDuringTouch.current = false;
       dragStartY.current = e.touches[0].clientY;
-      isDragging.current = true;
+      // Never start drag from inside scroll area — decide in touchmove
+      isDragging.current = !inScrollArea;
     };
 
     const onTouchMove = (e: TouchEvent) => {
+      // For touches in scroll area, decide whether to transition to drag
+      if (startedInScrollArea.current && !isDragging.current) {
+        const scrollEl = sheetScrollRef.current;
+        if (scrollEl && scrollEl.scrollTop > 0) scrolledDuringTouch.current = true;
+        if (scrolledDuringTouch.current) return;
+        const delta = e.touches[0].clientY - dragStartY.current;
+        if (scrollEl && scrollEl.scrollTop <= 0 && delta > 0) {
+          isDragging.current = true;
+        } else {
+          return;
+        }
+      }
       if (!isDragging.current) return;
       const delta = e.touches[0].clientY - dragStartY.current;
       if (delta > 0) {
@@ -421,6 +439,19 @@ export function MatchDetail() {
       el.removeEventListener("touchmove", onTouchMove);
       el.removeEventListener("touchend", onTouchEnd);
     };
+  }, [sheetVisible]);
+
+  // Stop non-passive parent touchmove from blocking native scroll in the scroll area
+  useEffect(() => {
+    const scrollEl = sheetScrollRef.current;
+    if (!scrollEl) return;
+
+    const onScrollTouchMove = (e: TouchEvent) => {
+      if (!isDragging.current) e.stopPropagation();
+    };
+
+    scrollEl.addEventListener("touchmove", onScrollTouchMove, { passive: true });
+    return () => scrollEl.removeEventListener("touchmove", onScrollTouchMove);
   }, [sheetVisible]);
 
   // ── Queries ──
@@ -667,7 +698,7 @@ export function MatchDetail() {
             }}
           >
             {/* Drag handle */}
-            <div className="absolute top-0 inset-x-0 z-20 flex justify-center py-3 rounded-t-3xl backdrop-blur-md pointer-events-none">
+            <div className="absolute top-0 inset-x-0 z-20 flex justify-center py-3 rounded-t-3xl backdrop-blur-md" style={{ touchAction: "none" }}>
               <div className="w-10 h-1 rounded-full bg-muted-foreground/40" />
             </div>
 
