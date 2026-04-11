@@ -1,4 +1,5 @@
-import { memo, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { usePageShortcuts, useKeyboard } from '@/keyboard/useKeyboard'
 import { playerImageUrl } from '../api/client'
 import type { OverallLeaderboardEntry, OverallLeaderboardStat } from '../types/api'
 import { useOverallLeaderboard } from '@/hooks/useQueries'
@@ -6,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Kbd } from '@/components/ui/kbd'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -81,19 +83,39 @@ function MatchStatsPopover({ stats }: { stats: OverallLeaderboardStat[] }) {
 const LeaderboardRow = memo(function LeaderboardRow({
   row,
   rank,
+  focused,
+  registerClick,
+  idx,
 }: {
   row: OverallLeaderboardEntry
   rank: number
+  focused?: boolean
+  registerClick?: (idx: number, fn: () => void) => void
+  idx?: number
 }) {
   const [expanded, setExpanded] = useState(false)
   const avatarUrl = base64ToBlobUrl(row.imageurl)
+  const rowRef = useRef<HTMLTableRowElement>(null)
+
+  // Scroll into view when focused via keyboard
+  useEffect(() => {
+    if (focused && rowRef.current) {
+      rowRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+  }, [focused])
+
+  // Register toggle callback for keyboard navigation
+  const toggle = useCallback(() => setExpanded((v) => !v), [])
+  useEffect(() => {
+    if (registerClick && idx != null) registerClick(idx, toggle)
+  }, [registerClick, idx, toggle])
 
   return (
-    <tr className={`group ${expanded ? 'bg-muted/20' : ''}`}>
+    <tr ref={rowRef} className={`group ${expanded ? 'bg-muted/20' : ''} ${focused ? 'ring-2 ring-ring/60 ring-inset rounded-lg' : ''}`}>
       <td colSpan={6} className="p-0">
         <div
           className="flex items-center gap-3 px-3 py-2.5 transition-colors cursor-pointer hover:bg-muted/30"
-          onClick={() => setExpanded(!expanded)}
+          onClick={toggle}
         >
           <span className="w-8 shrink-0 text-center">
             {rank <= 3 ? (
@@ -152,6 +174,33 @@ export function Leaderboard() {
   const safePage = Math.min(page, totalPages)
   const start = (safePage - 1) * pageSize
   const pageRows = filteredSorted.slice(start, start + pageSize)
+  const [focusedIdx, setFocusedIdx] = useState(-1)
+  const rowClickRefs = useRef<Map<number, () => void>>(new Map())
+
+  // Keyboard shortcuts for leaderboard
+  const { isDisabled: off } = useKeyboard()
+  usePageShortcuts('leaderboard', (e: KeyboardEvent) => {
+    if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !off('lb-nav')) {
+      e.preventDefault()
+      setFocusedIdx((prev) =>
+        e.key === 'ArrowDown'
+          ? Math.min(prev + 1, pageRows.length - 1)
+          : Math.max(prev - 1, -1),
+      )
+      return true
+    }
+    if (e.key === 'Enter' && !off('lb-expand') && focusedIdx >= 0) {
+      const clickFn = rowClickRefs.current.get(focusedIdx)
+      if (clickFn) clickFn()
+      return true
+    }
+    if (e.key === 'e' && !off('lb-expand-e') && focusedIdx >= 0) {
+      const clickFn = rowClickRefs.current.get(focusedIdx)
+      if (clickFn) clickFn()
+      return true
+    }
+    return false
+  })
 
   const onSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
@@ -282,12 +331,14 @@ export function Leaderboard() {
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                data-search=""
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by name or email..."
-                className="pl-9"
+                className="pl-9 pr-8"
               />
+              <Kbd className="absolute right-2.5 top-1/2 -translate-y-1/2">/</Kbd>
             </div>
             <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
               <SelectTrigger className="w-[110px]">
@@ -331,7 +382,14 @@ export function Leaderboard() {
               </thead>
               <tbody>
                 {pageRows.map((row, i) => (
-                  <LeaderboardRow key={row.email} row={row} rank={start + i + 1} />
+                  <LeaderboardRow
+                    key={row.email}
+                    row={row}
+                    rank={start + i + 1}
+                    focused={i === focusedIdx}
+                    idx={i}
+                    registerClick={(idx, fn) => rowClickRefs.current.set(idx, fn)}
+                  />
                 ))}
                 {pageRows.length === 0 && (
                   <tr>

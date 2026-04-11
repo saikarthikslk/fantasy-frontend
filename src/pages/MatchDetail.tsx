@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import type { ApiMatch, ApiPlayer, ScorecardInnings } from "../types/api";
 import TeamPreview from "./TeamPreview";
 import TeamComparison from "./TeamComparison";
@@ -32,8 +32,10 @@ import {
   ChevronsRight,
   ChevronRight,
 } from "lucide-react";
+import { usePageShortcuts, useKeyboard } from "@/keyboard/useKeyboard";
 
 type DetailTab = "scorecard" | "leaderboard" | "playerstats";
+const DETAIL_TABS: DetailTab[] = ["scorecard", "leaderboard", "playerstats"];
 
 
 
@@ -578,6 +580,42 @@ export function MatchDetail() {
       return now <= windowStartMs;
     })();
 
+  const navigate = useNavigate();
+  const { isDisabled: off } = useKeyboard();
+
+  usePageShortcuts("match-detail", (e: KeyboardEvent) => {
+    if (e.key === "1" && !off("md-tab-1")) { setTab("scorecard"); setPage(1); setQuery(""); return true; }
+    if (e.key === "2" && !off("md-tab-2")) { setTab("leaderboard"); setPage(1); setQuery(""); return true; }
+    if (e.key === "3" && !off("md-tab-3")) { setTab("playerstats"); setPage(1); setQuery(""); return true; }
+
+    if ((e.key === "t" || e.key === "ArrowRight") && !off("md-cycle") && !off("md-arrows")) {
+      e.preventDefault();
+      const next = DETAIL_TABS[(DETAIL_TABS.indexOf(tab) + 1) % DETAIL_TABS.length];
+      setTab(next); setPage(1); setQuery("");
+      return true;
+    }
+    if (e.key === "ArrowLeft" && !off("md-arrows")) {
+      e.preventDefault();
+      const prev = DETAIL_TABS[(DETAIL_TABS.indexOf(tab) - 1 + DETAIL_TABS.length) % DETAIL_TABS.length];
+      setTab(prev); setPage(1); setQuery("");
+      return true;
+    }
+
+    if (e.key === "l" && !off("md-lb")) { setTab("leaderboard"); setPage(1); setQuery(""); return true; }
+
+    if (e.key === "c" && !off("md-create") && match && !teamCreationLocked && !squadEditingLocked && match.state !== "Completed") {
+      navigate(`/matches/${match.matchId}/create/${isTeamCreated ? "edit" : "new"}`);
+      return true;
+    }
+
+    if (e.key === "Escape" && sheetDid != null) {
+      setSheetDid(null);
+      return true;
+    }
+
+    return false;
+  });
+
   if (!Number.isFinite(matchId)) {
     return (
       <div className="container pt-8">
@@ -920,6 +958,7 @@ export function MatchDetail() {
                     <div className="relative w-full sm:w-64">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
+                        data-search=""
                         type="search"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}

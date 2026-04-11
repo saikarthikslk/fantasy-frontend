@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { usePageShortcuts, useKeyboard } from '@/keyboard/useKeyboard'
 import type { ApiMatch, ApiPlayer } from '@/types/api'
 import {
   creditsForPlayer,
@@ -32,6 +33,7 @@ import {
   DialogDescription, DialogFooter,
 } from '@/components/ui/dialog'
 import { Loader2, AlertCircle, Check, X, ChevronLeft, Sparkles } from 'lucide-react'
+import { Kbd } from '@/components/ui/kbd'
 
 // Hoisted for useSyncExternalStore (must be stable references)
 const MOBILE_MQ = '(max-width: 1023px)'
@@ -375,7 +377,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
     smartXIPicked={smartXIPicked}
     onDismissSmartHint={() => setSmartXIPicked(false)}
     isAnnounced={isAnnounced}
-  />{benchedDialog}</>
+  /></>
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -417,7 +419,7 @@ function DesktopCreateTeam({
     selected, selectedList, byId, roleCounts, creditsLeft,
     hint, validationErrors, captainViceErrors, canSave,
     nTeam1, nTeam2, captainId, viceCaptainId,
-    pickPlayer, clearAll,
+    pickPlayer, clearAll, removePlayer,
   } = draft
 
   const pool = useMemo(() => {
@@ -429,6 +431,23 @@ function DesktopCreateTeam({
   }, [players, roleFilter, t1Id, t2Id])
 
   const roleTabs: Array<'ALL' | FantasyRole> = ['WK', 'BAT', 'AR', 'BOWL', 'ALL']
+
+  // ── Keyboard shortcuts (desktop only) ──
+  const { isDisabled: off } = useKeyboard()
+  usePageShortcuts('team-builder', (e: KeyboardEvent) => {
+    if (e.key === 's' && !off('tb-smart') && !smartXILoading) { onSmartXI(); return true }
+    if (e.key === 'Enter' && !off('tb-save') && canSave && !saving && !success) {
+      if (smartXIPicked) setConfirmOpen(true)
+      else onSubmit()
+      return true
+    }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && !off('tb-remove') && selectedList.length > 0) {
+      const last = selectedList[selectedList.length - 1]
+      removePlayer(playerKey(last))
+      return true
+    }
+    return false
+  })
 
   const onDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault()
@@ -515,10 +534,12 @@ function DesktopCreateTeam({
           <Button variant="outline" disabled={smartXILoading} onClick={onSmartXI} title="Auto-pick a balanced XI based on player credits, role balance, and team diversity" className="gap-1.5 shrink-0">
             <Sparkles className="h-4 w-4" />
             {smartXILoading ? 'Picking…' : 'Smart XI'}
+            <Kbd>S</Kbd>
           </Button>
           <Button disabled={!canSave || saving || success} onClick={() => smartXIPicked ? setConfirmOpen(true) : onSubmit()} className="gap-2 shrink-0">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : success ? <Check className="h-4 w-4" /> : smartXIPicked ? <Sparkles className="h-4 w-4" /> : null}
             {saving ? 'Saving' : success ? 'Saved!' : smartXIPicked ? 'Save Smart XI' : 'Save squad'}
+            <Kbd>↵</Kbd>
           </Button>
         </div>
 

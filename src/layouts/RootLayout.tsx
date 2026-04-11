@@ -19,6 +19,8 @@ import {
   Home,
   User,
 } from 'lucide-react'
+import { CommandMenu } from '@/keyboard/CommandMenu'
+import { ShortcutsHelpModal } from '@/keyboard/ShortcutsHelpModal'
 
 export function RootLayout() {
   const [token, settoken1] = useState<string | null>(useAuthToken())
@@ -163,6 +165,10 @@ export function RootLayout() {
           </div>
         </footer>
       )}
+
+      {/* Keyboard UI — portals to body */}
+      <CommandMenu />
+      <ShortcutsHelpModal />
     </div>
   )
 }
