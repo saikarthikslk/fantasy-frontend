@@ -9,6 +9,7 @@ import { PlayerPoolCard } from '../components/PlayerPoolCard'
 import { CategorySection } from '../components/CategorySection'
 import { StatusBanner } from '../components/StatusBanner'
 import { ChevronRight, Sparkles } from 'lucide-react'
+import { Kbd } from '@/components/ui/kbd'
 
 interface Step1Props {
   players: ApiPlayer[]
@@ -171,6 +172,7 @@ export function Step1PlayerPicker({
             >
               <Sparkles className="h-4 w-4" />
               {smartXILoading ? 'Picking…' : 'Smart XI'}
+              <Kbd>S</Kbd>
             </Button>
           )}
 
