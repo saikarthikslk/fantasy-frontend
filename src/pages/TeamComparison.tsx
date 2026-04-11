@@ -3,7 +3,7 @@ import type { MatchLeaderboardEntry, MatchLbPlayer } from "../types/api";
 import { playerImageUrl } from "../api/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Check, ArrowLeftRight } from "lucide-react";
+import { Check, ArrowLeftRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 const ROLE_ORDER = ["WK", "BAT", "AR", "BOWL"] as const;
 const ROLE_LABELS: Record<string, string> = {
@@ -120,10 +120,25 @@ export default function TeamComparison({
             <p className="text-[10px] text-muted-foreground mb-1">You</p>
             <p className="text-2xl font-bold tabular-nums">{myEntry.totalpoints.toFixed(1)}</p>
           </div>
-          <div className="flex flex-col items-center gap-0.5">
-            <span className="text-[9px] uppercase tracking-wider text-muted-foreground">vs</span>
-            <Delta a={myEntry.totalpoints} b={theirEntry.totalpoints} />
-          </div>
+          {(() => {
+            const d = myEntry.totalpoints - theirEntry.totalpoints;
+            const tied = Math.abs(d) < 0.05;
+            const ahead = d > 0;
+            return (
+              <div className="flex flex-col items-center gap-0.5">
+                {tied ? (
+                  <Minus className="h-4 w-4 text-muted-foreground" />
+                ) : ahead ? (
+                  <TrendingUp className="h-4 w-4 text-emerald-500" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-red-400" />
+                )}
+                <span className={`text-[10px] font-semibold ${tied ? "text-muted-foreground" : ahead ? "text-emerald-500" : "text-red-400"}`}>
+                  {tied ? "Tied" : `${ahead ? "Ahead" : "Behind"} ${Math.abs(d).toFixed(1)}`}
+                </span>
+              </div>
+            );
+          })()}
           <div className="flex-1 text-center">
             <p className="text-[10px] text-muted-foreground mb-1 truncate">
               {theirEntry.name}{theirRank > 0 && <span className="opacity-40"> #{theirRank}</span>}
@@ -174,12 +189,22 @@ export default function TeamComparison({
           <div className="px-5 py-4">
             <div className="flex items-center justify-between mb-3">
               <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Different picks</p>
-              <Delta a={diffPtsMe} b={diffPtsThem} />
+              {(() => {
+                const d = diffPtsMe - diffPtsThem;
+                if (Math.abs(d) < 0.05) return <span className="text-[10px] text-muted-foreground">Even</span>;
+                const ahead = d > 0;
+                return (
+                  <span className={`text-[10px] font-semibold flex items-center gap-0.5 ${ahead ? "text-emerald-500" : "text-red-400"}`}> You:
+                    {ahead ? "+" : ""}{Math.abs(d).toFixed(1)}
+                    {ahead ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                  </span>
+                );
+              })()}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-[10px] text-muted-foreground mb-2">You</p>
+                <p className="text-[10px] text-muted-foreground mb-2">You · {diffPtsMe.toFixed(1)}</p>
                 <div className="space-y-2">
                   {c.onlyMine.map((p) => (
                     <DiffCell key={p.playerid} player={p} teamNames={teamNames} />
@@ -187,7 +212,7 @@ export default function TeamComparison({
                 </div>
               </div>
               <div>
-                <p className="text-[10px] text-muted-foreground mb-2">Them</p>
+                <p className="text-[10px] text-muted-foreground mb-2">Them · {diffPtsThem.toFixed(1)}</p>
                 <div className="space-y-2">
                   {c.onlyTheirs.map((p) => (
                     <DiffCell key={p.playerid} player={p} teamNames={teamNames} />

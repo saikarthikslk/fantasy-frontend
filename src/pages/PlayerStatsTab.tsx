@@ -688,6 +688,8 @@ function SelectedByDrawer({
   const dragStartY = useRef(0);
   const isDragging = useRef(false);
   const dragYRef = useRef(0);
+  const startedInScrollArea = useRef(false);
+  const scrolledDuringTouch = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
 
@@ -729,12 +731,26 @@ function SelectedByDrawer({
     if (!el) return;
 
     const onTouchStart = (e: TouchEvent) => {
-      if (scrollRef.current && scrollRef.current.scrollTop > 0) return;
+      const scrollEl = scrollRef.current;
+      const inScrollArea = scrollEl?.contains(e.target as Node);
+      startedInScrollArea.current = !!inScrollArea;
+      scrolledDuringTouch.current = false;
       dragStartY.current = e.touches[0].clientY;
-      isDragging.current = true;
+      isDragging.current = !inScrollArea;
     };
 
     const onTouchMove = (e: TouchEvent) => {
+      if (startedInScrollArea.current && !isDragging.current) {
+        const scrollEl = scrollRef.current;
+        if (scrollEl && scrollEl.scrollTop > 0) scrolledDuringTouch.current = true;
+        if (scrolledDuringTouch.current) return;
+        const delta = e.touches[0].clientY - dragStartY.current;
+        if (scrollEl && scrollEl.scrollTop <= 0 && delta > 0) {
+          isDragging.current = true;
+        } else {
+          return;
+        }
+      }
       if (!isDragging.current) return;
       const delta = e.touches[0].clientY - dragStartY.current;
       if (delta > 0) {
@@ -761,6 +777,19 @@ function SelectedByDrawer({
       el.removeEventListener("touchend", onTouchEnd);
     };
   }, [visible, onClose]);
+
+  // Stop non-passive parent touchmove from blocking native scroll in the scroll area
+  useEffect(() => {
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return;
+
+    const onScrollTouchMove = (e: TouchEvent) => {
+      if (!isDragging.current) e.stopPropagation();
+    };
+
+    scrollEl.addEventListener("touchmove", onScrollTouchMove, { passive: true });
+    return () => scrollEl.removeEventListener("touchmove", onScrollTouchMove);
+  }, [visible]);
 
   if (!player) return null;
 
@@ -793,7 +822,7 @@ function SelectedByDrawer({
               transition: dragY > 0 ? "none" : "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
             }}
           >
-            <div className="absolute top-0 inset-x-0 z-20 flex justify-center py-3 rounded-t-3xl backdrop-blur-md pointer-events-none">
+            <div className="absolute top-0 inset-x-0 z-20 flex justify-center py-3 rounded-t-3xl backdrop-blur-md" style={{ touchAction: "none" }}>
               <div className="w-10 h-1 rounded-full bg-muted-foreground/40" />
             </div>
             <div ref={scrollRef} className="overflow-y-auto flex-1 min-h-0 pt-2" style={{ overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
