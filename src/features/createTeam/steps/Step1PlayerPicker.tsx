@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import type { ApiMatch, ApiPlayer } from '@/types/api'
 import { normalizeRole, playerKey, tryAddPlayer, SQUAD_SIZE, type FantasyRole } from '@/fantasy/dream11Rules'
 import { playerImageUrl } from '@/api/client'
@@ -44,6 +44,11 @@ export function Step1PlayerPicker({
   apiError, isAnnounced,
 }: Step1Props) {
   const [roleFilter, setRoleFilter] = useState<'ALL' | FantasyRole>('WK')
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo(0, 0)
+  }, [roleFilter])
 
   const pool = useMemo(() => {
     const base = roleFilter === 'ALL' ? players : players.filter((p) => normalizeRole(p.type) === roleFilter)
@@ -89,7 +94,7 @@ export function Step1PlayerPicker({
       />
 
       {/* Player pool — two team columns */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0">
         <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-border">
           {/* Team 1 */}
           <div className="px-3 pt-3 pb-2">
