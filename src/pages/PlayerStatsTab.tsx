@@ -684,11 +684,21 @@ function SelectedByDrawer({
   const [dragY, setDragY] = useState(0);
   const [visible, setVisible] = useState(false);
   const [entered, setEntered] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const dragStartY = useRef(0);
   const isDragging = useRef(false);
   const dragYRef = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
+
+  // Track sm breakpoint to avoid rendering both Sheet and mobile drawer
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 640px)");
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   // Animate in/out
   useEffect(() => {
@@ -704,6 +714,14 @@ function SelectedByDrawer({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // Lock body scroll when mobile drawer is open
+  useEffect(() => {
+    if (visible) {
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = ""; };
+    }
+  }, [visible]);
 
   // Touch drag-to-dismiss
   useEffect(() => {
@@ -749,35 +767,36 @@ function SelectedByDrawer({
   return (
     <>
       {/* Desktop: side sheet */}
-      <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-        <SheetContent side="right" className="p-0 flex flex-col overflow-hidden sm:max-w-md max-sm:hidden">
-          <SheetTitle className="sr-only">Player Details</SheetTitle>
-          <SelectedByContent player={player} users={users} totalUsers={totalUsers} />
-        </SheetContent>
-      </Sheet>
+      {isDesktop && (
+        <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+          <SheetContent side="right" className="p-0 flex flex-col overflow-hidden sm:max-w-md">
+            <SheetTitle className="sr-only">Player Details</SheetTitle>
+            <SelectedByContent player={player} users={users} totalUsers={totalUsers} />
+          </SheetContent>
+        </Sheet>
+      )}
 
       {/* Mobile: bottom drawer */}
-      {visible && (
+      {!isDesktop && visible && (
         <>
           <div
-            className="fixed inset-0 z-50 bg-black/50 sm:hidden"
+            className="fixed inset-0 z-50 bg-black/50"
             style={{ opacity: entered ? 1 : 0, transition: "opacity 300ms ease" }}
             onClick={onClose}
           />
           <div
             ref={sheetRef}
-            className="fixed inset-x-0 bottom-0 z-50 flex flex-col h-[92vh] rounded-t-3xl overflow-hidden bg-background sm:hidden"
+            className="fixed inset-x-0 bottom-0 z-50 flex flex-col h-[92vh] rounded-t-3xl overflow-hidden bg-background"
             style={{
               boxShadow: "0 -6px 20px rgba(255, 255, 255, 0.08), 0 -1px 6px rgba(255, 255, 255, 0.05)",
               transform: `translateY(${!entered ? "100%" : dragY > 0 ? `${dragY}px` : "0"})`,
               transition: dragY > 0 ? "none" : "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
-              overscrollBehavior: "contain",
             }}
           >
             <div className="absolute top-0 inset-x-0 z-20 flex justify-center py-3 rounded-t-3xl backdrop-blur-md pointer-events-none">
               <div className="w-10 h-1 rounded-full bg-muted-foreground/40" />
             </div>
-            <div ref={scrollRef} className="overflow-y-auto flex-1 min-h-0 pt-2">
+            <div ref={scrollRef} className="overflow-y-auto flex-1 min-h-0 pt-2" style={{ overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
               <SelectedByContent player={player} users={users} totalUsers={totalUsers} />
             </div>
           </div>

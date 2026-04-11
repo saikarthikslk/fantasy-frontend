@@ -376,6 +376,14 @@ export function MatchDetail() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSheetOpen, isMobile]);
 
+  // Lock body scroll when mobile sheet is open
+  useEffect(() => {
+    if (sheetVisible) {
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = ""; };
+    }
+  }, [sheetVisible]);
+
   // Native non-passive touch listeners to prevent pull-to-refresh
   useEffect(() => {
     const el = sheetRef.current;
@@ -656,7 +664,6 @@ export function MatchDetail() {
               boxShadow: "0 -6px 20px rgba(255, 255, 255, 0.08), 0 -1px 6px rgba(255, 255, 255, 0.05)",
               transform: `translateY(${!sheetEntered ? "100%" : dragY > 0 ? `${dragY}px` : "0"})`,
               transition: dragY > 0 ? "none" : "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
-              overscrollBehavior: "contain",
             }}
           >
             {/* Drag handle */}
@@ -681,7 +688,7 @@ export function MatchDetail() {
             )}
 
             {/* Scrollable content */}
-            <div ref={sheetScrollRef} className="overflow-y-auto flex-1 min-h-0 pt-2">
+            <div ref={sheetScrollRef} className="overflow-y-auto flex-1 min-h-0 pt-2" style={{ overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
               {sheetDid != null && sheetTab === "squad" && (
                 <TeamPreview matchId={matchId} dreamId={sheetDid} lbEntry={sheetLbEntry} teamNames={teamNames} />
               )}
@@ -773,7 +780,9 @@ export function MatchDetail() {
           {/* Tabs */}
           <Tabs ref={tabsRef} value={tab} onValueChange={(v) => {
             setTab(v as DetailTab);
-            tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+            setPage(1);
+            setQuery("");
+            tabsRef.current?.scrollIntoView({ behavior: "instant", block: "start" });
           }}>
             <TabsList className="mb-4">
               <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
