@@ -853,7 +853,7 @@ function SelectedByDrawer({
           />
           <div
             ref={sheetRef}
-            className="fixed inset-x-0 bottom-0 z-50 flex flex-col h-[92vh] rounded-t-3xl overflow-hidden bg-background"
+            className="fixed inset-x-0 bottom-0 z-50 flex flex-col h-[92dvh] rounded-t-3xl overflow-hidden bg-background"
             style={{
               boxShadow: "0 -6px 20px rgba(255, 255, 255, 0.08), 0 -1px 6px rgba(255, 255, 255, 0.05)",
               transform: `translateY(${!entered ? "100%" : dragY > 0 ? `${dragY}px` : "0"})`,
