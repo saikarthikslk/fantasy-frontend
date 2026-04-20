@@ -27,7 +27,7 @@ export function ShortcutsHelpModal() {
 
   return (
     <Dialog open={helpModalOpen} onOpenChange={(open) => { setHelpModalOpen(open); if (!open) setHelpCustomizing(false) }}>
-      <DialogContent className="max-w-md sm:max-w-lg max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-md sm:max-w-lg max-h-[80dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Keyboard shortcuts</DialogTitle>
           <DialogDescription className="mt-0.5">

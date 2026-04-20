@@ -160,7 +160,7 @@ export default function TeamPreview({ matchId, dreamId, lbEntry = null, teamName
 
   if (loading) {
     return (
-      <div className="flex flex-col h-[92vh]">
+      <div className="flex flex-col h-full">
         {/* Header skeleton — matches loaded header */}
         <div className="p-6 pb-4 pt-5 shrink-0 space-y-4">
           <Skeleton className="h-3 w-28" />
