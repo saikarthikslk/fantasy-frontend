@@ -31,7 +31,15 @@ import {
   Users,
   Zap,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { getTeamColors, playerTint } from "@/fantasy/teamColors";
 
 /* ── Types ────────────────────────────────────────────── */
 
@@ -45,6 +53,8 @@ type PlayerStat = {
   inMyXI: boolean;
   isCaptain: boolean;
   isViceCaptain: boolean;
+  /** Whether the backend's Smart XI recommendation includes this player. */
+  inSmartXI: boolean;
   batting?: {
     runs: number;
     balls: number;
@@ -93,6 +103,7 @@ function buildPlayerStats(
   lbRows: MatchLeaderboardEntry[],
   matchPlayers: ApiPlayer[],
   dreamTeam: any | null,
+  smartTeam: any | null,
   innings1: ScorecardInnings | null,
   innings2: ScorecardInnings | null,
   match: ApiMatch | null,
@@ -142,6 +153,14 @@ function buildPlayerStats(
       if (parsed?.viceCaptainPlayerId) vcId = String(parsed.viceCaptainPlayerId);
     } catch {
       /* graceful fallback */
+    }
+  }
+
+  // 3b) Collect Smart XI player IDs from the backend recommendation
+  const smartXIIds = new Set<string>();
+  if (smartTeam?.players && Array.isArray(smartTeam.players)) {
+    for (const p of smartTeam.players as ApiPlayer[]) {
+      if (p?.id != null) smartXIIds.add(String(p.id));
     }
   }
 
@@ -210,6 +229,7 @@ function buildPlayerStats(
       inMyXI: myXIIds.has(pid) || myXIIds.has(numericId),
       isCaptain: captainId === pid || captainId === numericId,
       isViceCaptain: vcId === pid || vcId === numericId,
+      inSmartXI: smartXIIds.has(pid) || smartXIIds.has(numericId),
       batting: battingMap.get(nk),
       bowling: bowlingMap.get(nk),
     });
@@ -398,16 +418,21 @@ function MyXISummary({
 
 function PlayerRow({ player, rank, showMedals, onClick }: { player: PlayerStat; rank: number; showMedals: boolean; onClick?: () => void }) {
   const isTopScorer = showMedals && rank <= 3 && player.points > 0;
+  const teamInk = getTeamColors(player.team).ink;
+  const rowStyle = playerTint(player.team, {
+    intensity: player.inMyXI || isTopScorer ? 'medium' : 'subtle',
+  });
 
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer ${
+      style={rowStyle}
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all cursor-pointer hover:brightness-125 ${
         player.inMyXI
-          ? "bg-primary/[0.06] border border-primary/15 hover:bg-primary/[0.1]"
+          ? "ring-1 ring-primary/25"
           : isTopScorer
-            ? "bg-primary/5 border border-primary/10 hover:bg-primary/[0.08]"
-            : "bg-muted/30 hover:bg-muted/50"
+            ? "ring-1 ring-primary/15"
+            : ""
       }`}
     >
       {/* Rank */}
@@ -447,9 +472,23 @@ function PlayerRow({ player, rank, showMedals, onClick }: { player: PlayerStat; 
           {player.inMyXI && !player.isCaptain && !player.isViceCaptain && (
             <Star className="h-3 w-3 text-primary/60 fill-primary/60 shrink-0" />
           )}
+          {player.inSmartXI && (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="shrink-0 inline-flex items-center gap-1 rounded-md border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
+                    <Sparkles className="h-2.5 w-2.5" />
+                    Smart XI
+                  </span>
+                </TooltipTrigger>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
         <div className="flex items-center gap-1.5 mt-0.5">
-          <span className="text-[10px] text-muted-foreground">{player.team}</span>
+          <span className="text-[10px] font-semibold tracking-wide" style={{ color: teamInk }}>
+            {player.team}
+          </span>
           <span className="text-[10px] text-muted-foreground/40">·</span>
           <span className="text-[10px] text-muted-foreground">{player.role}</span>
           {/* Inline batting/bowling stats */}
@@ -843,6 +882,7 @@ export type PlayerStatsTabProps = {
   lbError: string | null;
   matchPlayers: ApiPlayer[];
   dreamTeam: any | null;
+  smartTeam?: any | null;
   innings1: ScorecardInnings | null;
   innings2: ScorecardInnings | null;
   isLive?: boolean;
@@ -855,6 +895,7 @@ export default function PlayerStatsTab({
   lbError,
   matchPlayers,
   dreamTeam,
+  smartTeam = null,
   innings1,
   innings2,
   isLive = false,
@@ -872,8 +913,8 @@ export default function PlayerStatsTab({
 
   // Build normalized player stats
   const allStats = useMemo(
-    () => buildPlayerStats(lbRows, matchPlayers, dreamTeam, innings1, innings2, match),
-    [lbRows, matchPlayers, dreamTeam, innings1, innings2, match],
+    () => buildPlayerStats(lbRows, matchPlayers, dreamTeam, smartTeam, innings1, innings2, match),
+    [lbRows, matchPlayers, dreamTeam, smartTeam, innings1, innings2, match],
   );
 
   // Available teams for filter
@@ -980,14 +1021,33 @@ export default function PlayerStatsTab({
 
   return (
     <div className="space-y-4">
-      {/* Live indicator */}
-      {isLive && (
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-          </span>
-          <span className="text-xs font-medium text-primary">Live updating</span>
+      {/* Live indicator + legend */}
+      {(isLive || hasTeam || smartTeam?.players?.length) && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          {isLive && (
+            <div className="flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+              </span>
+              <span className="text-xs font-medium text-primary">Live updating</span>
+            </div>
+          )}
+          {hasTeam && (
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Star className="h-3 w-3 text-primary/60 fill-primary/60" />
+              <span>In your XI</span>
+            </div>
+          )}
+          {smartTeam?.players?.length > 0 && (
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
+                <Sparkles className="h-2.5 w-2.5" />
+                Smart XI
+              </span>
+              <span>Recommended pick</span>
+            </div>
+          )}
         </div>
       )}
 
