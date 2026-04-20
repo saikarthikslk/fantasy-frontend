@@ -6,7 +6,6 @@ import { Separator } from "@/components/ui/separator";
 import { Check, ArrowLeftRight, TrendingUp, TrendingDown, Minus, ChevronLeft, ChevronRight, Users, Sparkles } from "lucide-react";
 import {
   Tooltip,
-  TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";

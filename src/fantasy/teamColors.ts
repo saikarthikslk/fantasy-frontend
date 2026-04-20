@@ -63,7 +63,7 @@ export function fixtureTint(
 export function playerTint(
   teamShortName: string | undefined | null,
   opts: { intensity?: 'subtle' | 'medium' } = {},
-): { background: string; borderLeft: string } {
+): { background: string } {
   const c = getTeamColors(teamShortName)
   const [edge, fade] = opts.intensity === 'medium' ? ['24', '0C'] : ['18', '06']
   return {
