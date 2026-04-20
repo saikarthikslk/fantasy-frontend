@@ -100,6 +100,8 @@ export type MatchLeaderboardEntry = {
   name: string
   email: string
   imageurl: string | null
+  /** True when the team was auto-generated via Smart XI (carries a 10% deduction). */
+  isauto?: boolean
 }
 
 /** Single match stat inside the overall leaderboard */
@@ -111,6 +113,8 @@ export type OverallLeaderboardStat = {
   t2: ApiTeam
   timestamp: number
   points: number
+  /** True when the team for this match was auto-generated via Smart XI. */
+  isauto?: boolean
 }
 
 /** One entry in the overall leaderboard (GET /lb/overall) */

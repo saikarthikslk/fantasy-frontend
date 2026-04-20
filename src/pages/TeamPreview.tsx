@@ -4,7 +4,13 @@ import { apiUrl, getToken, playerImageUrl } from "../api/client";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Sparkles } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const ROLE_ORDER = ["WK", "BAT", "AR", "BOWL"];
 const ROLE_LABELS = { WK: "Wicket Keeper", BAT: "Batsmen", AR: "All Rounders", BOWL: "Bowlers" };
@@ -226,9 +232,23 @@ export default function TeamPreview({ matchId, dreamId, lbEntry = null, teamName
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="p-6 pb-4 pt-5 shrink-0">
-        <p className="text-[11px] text-muted-foreground tracking-wide uppercase mb-3">
-          Squad · {playerEntities.length} players
-        </p>
+        <div className="flex items-center gap-2 mb-3">
+          <p className="text-[11px] text-muted-foreground tracking-wide uppercase">
+            Squad · {playerEntities.length} players
+          </p>
+          {data.isauto && (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
+                    <Sparkles className="h-2.5 w-2.5" />
+                    Smart XI
+                  </span>
+                </TooltipTrigger>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
 
         {/* Points badge */}
         <div className="flex items-baseline gap-2 mb-4">

@@ -310,7 +310,7 @@ export function Profile() {
                     </span>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-60 text-center">
-                    If you miss picking your team before a match, we'll auto-select a Smart XI for you so you never miss out on points.
+                    If you miss picking your team before a match, we'll auto-select a Smart XI for you. A 10% score deduction applies for using this feature.
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -325,7 +325,7 @@ export function Profile() {
                   </button>
                 </PopoverTrigger>
                 <PopoverContent side="top" className="max-w-60 text-center">
-                  If you miss picking your team before a match, we'll auto-select a Smart XI for you so you never miss out on points.
+                  If you miss picking your team before a match, we'll auto-select a Smart XI for you. A 10% score deduction applies for using this feature.
                 </PopoverContent>
               </Popover>
             </div>

@@ -31,8 +31,15 @@ import {
   ChevronsLeft,
   ChevronsRight,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { usePageShortcuts, useKeyboard } from "@/keyboard/useKeyboard";
+import { getTeamColors, fixtureTint, playerTint } from "@/fantasy/teamColors";
 
 type DetailTab = "scorecard" | "leaderboard" | "playerstats";
 const DETAIL_TABS: DetailTab[] = ["scorecard", "leaderboard", "playerstats"];
@@ -146,6 +153,43 @@ function resolveTeamName(
   if (match.team2?.teamId === tid)
     return match.team2.teamSName ?? match.team2.teamName ?? fallback;
   return fallback;
+}
+
+/** Escape regex special characters in a literal string. */
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Splits `text` on team name occurrences (full name or short name) and wraps
+ * matched segments in a team-tinted span. Longer names are matched first so
+ * "Gujarat Titans" takes priority over "GT".
+ */
+function colorizeTeamNames(text: string, match: ApiMatch | null) {
+  if (!match) return text;
+  const buckets = [match.team1, match.team2]
+    .filter((t): t is NonNullable<typeof t> => !!t)
+    .map((t) => ({
+      names: [t.teamName, t.teamSName].filter((n): n is string => !!n),
+      ink: getTeamColors(t.teamSName ?? t.teamName).ink,
+    }));
+  const allNames = buckets
+    .flatMap((b) => b.names)
+    .sort((a, b) => b.length - a.length);
+  if (allNames.length === 0) return text;
+  const regex = new RegExp(`(${allNames.map(escapeRegex).join("|")})`, "g");
+  const parts = text.split(regex);
+  return parts.map((part, i) => {
+    const bucket = buckets.find((b) => b.names.includes(part));
+    if (bucket) {
+      return (
+        <span key={i} style={{ color: bucket.ink }} className="font-semibold">
+          {part}
+        </span>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
 }
 
 /* Scorecard View */
@@ -304,15 +348,21 @@ function InningsSection({
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const teamColor = getTeamColors(teamName);
   return (
-    <div className="rounded-lg border overflow-hidden">
+    <div
+      className="rounded-lg border overflow-hidden"
+    >
       <button
         type="button"
-        className="w-full flex items-center justify-between px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors cursor-pointer"
+        className="w-full flex items-center justify-between px-4 py-3 transition-all cursor-pointer hover:brightness-125"
+        style={playerTint(teamName, { intensity: 'medium' })}
         onClick={() => setOpen(!open)}
       >
         <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold">{teamName}</span>
+          <span className="text-sm font-semibold tracking-wide" style={{ color: teamColor.ink }}>
+            {teamName}
+          </span>
           <span className="text-xs text-muted-foreground">{label}</span>
           <span className="text-sm font-bold tabular-nums">
             {innings.total.runs}/{innings.total.wickets}
@@ -783,15 +833,19 @@ export function MatchDetail() {
       {!loading && match && (
         <>
           {/* Hero */}
-          <Card className="mb-6 overflow-hidden">
-            <CardContent className="pt-6">
+          <Card
+            className="mb-6 overflow-hidden relative"
+          >
+            <CardContent className="pt-6 relative">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                   <Badge variant="secondary" className="mb-3">
                     {match.seriesName ?? "Cricket"}
                   </Badge>
                   <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-                    {t1} <span className="text-muted-foreground font-normal">vs</span> {t2}
+                    <span style={{ color: getTeamColors(t1).ink }}>{t1}</span>
+                    <span className="text-muted-foreground font-normal"> vs </span>
+                    <span style={{ color: getTeamColors(t2).ink }}>{t2}</span>
                   </h1>
                   <Badge variant={match.state === "Completed" ? "secondary" : "emerald"}
                     className="mt-2">
@@ -832,10 +886,14 @@ export function MatchDetail() {
                     {matchResult ? (
                       <>
                         <span className="text-xl leading-none">🏆</span>
-                        <span className="font-bold text-primary text-base tracking-wide">{matchResult}</span>
+                        <span className="font-bold text-primary text-base tracking-wide">
+                          {colorizeTeamNames(matchResult, match)}
+                        </span>
                       </>
                     ) : (
-                      <span className="text-sm text-muted-foreground">{scRaw!.matchstatus}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {colorizeTeamNames(scRaw!.matchstatus, match)}
+                      </span>
                     )}
                   </div>
                   {match.state === "Completed" && playerwon && (
@@ -897,11 +955,13 @@ export function MatchDetail() {
                 <div className="space-y-4">
 
                   {/* Score banner */}
-                  <Card>
+                  <Card className="overflow-hidden" style={fixtureTint(team1Name, team2Name, { intensity: 'medium' })}>
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-around gap-4">
                         <div className="text-center">
-                          <p className="text-sm font-medium text-muted-foreground mb-1">{team1Name}</p>
+                          <p className="text-sm font-semibold tracking-wide mb-1" style={{ color: getTeamColors(team1Name).ink }}>
+                            {team1Name}
+                          </p>
                           <p className={`text-2xl font-bold tabular-nums ${currentInnings === 1 ? 'text-foreground' : 'text-muted-foreground'}`}>
                             {innings1 ? `${innings1.total.runs}/${innings1.total.wickets}` : "—"}
                           </p>
@@ -909,7 +969,9 @@ export function MatchDetail() {
                         </div>
                         <span className="text-sm font-medium text-muted-foreground">VS</span>
                         <div className="text-center">
-                          <p className="text-sm font-medium text-muted-foreground mb-1">{team2Name}</p>
+                          <p className="text-sm font-semibold tracking-wide mb-1" style={{ color: getTeamColors(team2Name).ink }}>
+                            {team2Name}
+                          </p>
                           <p className={`text-2xl font-bold tabular-nums ${currentInnings === 2 ? 'text-foreground' : 'text-muted-foreground'}`}>
                             {innings2 ? `${innings2.total.runs}/${innings2.total.wickets}` : "—"}
                           </p>
@@ -1027,7 +1089,21 @@ export function MatchDetail() {
 
                           {/* Name */}
                           <div className="min-w-0">
-                            <span className="text-sm font-medium truncate block">{row.name}</span>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="text-sm font-medium truncate">{row.name}</span>
+                              {row.isauto && (
+                                <TooltipProvider delayDuration={0}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="shrink-0 inline-flex items-center gap-1 rounded-md border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
+                                        <Sparkles className="h-2.5 w-2.5" />
+                                        Smart XI
+                                      </span>
+                                    </TooltipTrigger>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
                             {isMyRow && <span className="text-[10px] text-primary font-medium">You</span>}
                           </div>
 
@@ -1102,6 +1178,7 @@ export function MatchDetail() {
                 lbError={lbError}
                 matchPlayers={(matchData?.players ?? []) as ApiPlayer[]}
                 dreamTeam={matchData?.dreamTeam ?? null}
+                smartTeam={matchData?.smartTeam ?? null}
                 innings1={innings1}
                 innings2={innings2}
                 isLive={teamCreationLocked}

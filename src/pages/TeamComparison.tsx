@@ -3,7 +3,12 @@ import type { MatchLeaderboardEntry, MatchLbPlayer, ScorecardInnings } from "@/t
 import { playerImageUrl } from "@/api/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Check, ArrowLeftRight, TrendingUp, TrendingDown, Minus, ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { Check, ArrowLeftRight, TrendingUp, TrendingDown, Minus, ChevronLeft, ChevronRight, Users, Sparkles } from "lucide-react";
+import {
+  Tooltip,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 /* ── Constants ── */
 
@@ -559,7 +564,21 @@ export default function TeamComparison({
       <div className="px-5 pt-5 pb-4 shrink-0">
         <div className="flex items-center gap-4">
           <div className="flex-1 text-center">
-            <p className="text-[10px] text-muted-foreground mb-1">Your</p>
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <p className="text-[10px] text-muted-foreground">Your</p>
+              {myEntry.isauto && (
+                <TooltipProvider delayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center gap-0.5 rounded border border-amber-500/20 bg-amber-500/10 px-1 py-px text-[9px] font-medium text-amber-400">
+                        <Sparkles className="h-2 w-2" />
+                        Smart XI
+                      </span>
+                    </TooltipTrigger>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
             <p className="text-2xl font-bold tabular-nums">{myEntry.totalpoints.toFixed(1)}</p>
           </div>
           {(() => {
@@ -582,9 +601,23 @@ export default function TeamComparison({
             );
           })()}
           <div className="flex-1 text-center">
-            <p className="text-[10px] text-muted-foreground mb-1 truncate">
-              {theirEntry.name}{theirRank > 0 && <span className="opacity-40"> #{theirRank}</span>}
-            </p>
+            <div className="flex items-center justify-center gap-1 mb-1 min-w-0">
+              <p className="text-[10px] text-muted-foreground truncate">
+                {theirEntry.name}{theirRank > 0 && <span className="opacity-40"> #{theirRank}</span>}
+              </p>
+              {theirEntry.isauto && (
+                <TooltipProvider delayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="shrink-0 inline-flex items-center gap-0.5 rounded border border-amber-500/20 bg-amber-500/10 px-1 py-px text-[9px] font-medium text-amber-400">
+                        <Sparkles className="h-2 w-2" />
+                        Smart XI
+                      </span>
+                    </TooltipTrigger>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
             <p className="text-2xl font-bold tabular-nums">{theirEntry.totalpoints.toFixed(1)}</p>
           </div>
         </div>
