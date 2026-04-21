@@ -561,7 +561,7 @@ export default function TeamComparison({
   return (
     <div className="flex flex-col h-full relative overflow-hidden">
       {/* ── Score header (fixed) ── */}
-      <div className="px-5 pt-5 pb-4 shrink-0">
+      <div className="px-5 pt-5 pb-4 shrink-0" data-drag-zone="true">
         <div className="flex items-center gap-4">
           <div className="flex-1 text-center">
             <div className="flex items-center justify-center gap-1 mb-1">
@@ -639,7 +639,7 @@ export default function TeamComparison({
       <div className="flex-1 min-h-0 overflow-y-auto">
 
         {/* ── Captain / VC ── */}
-        <div className="px-5 py-3">
+        <div className="px-5 py-3" data-drag-zone="true">
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-3 text-[12px]">
             <div className="flex items-center justify-center gap-2">
               <CaptainRow label="C" player={c.myCaptain} />

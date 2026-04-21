@@ -446,11 +446,12 @@ export function MatchDetail() {
     const onTouchStart = (e: TouchEvent) => {
       const scrollEl = sheetScrollRef.current;
       const inScrollArea = scrollEl?.contains(e.target as Node);
-      startedInScrollArea.current = !!inScrollArea;
+      const inDragZone = !!(e.target as HTMLElement)?.closest?.('[data-drag-zone="true"]');
+      startedInScrollArea.current = !!inScrollArea && !inDragZone;
       scrolledDuringTouch.current = false;
       dragStartY.current = e.touches[0].clientY;
-      // Never start drag from inside scroll area — decide in touchmove
-      isDragging.current = !inScrollArea;
+      // Drag immediately from non-scroll areas OR explicit drag zones (e.g. header, C/VC)
+      isDragging.current = !inScrollArea || inDragZone;
     };
 
     const onTouchMove = (e: TouchEvent) => {
@@ -789,7 +790,7 @@ export function MatchDetail() {
             }}
           >
             {/* Drag handle */}
-            <div className="absolute top-0 inset-x-0 z-20 flex justify-center py-3 rounded-t-3xl backdrop-blur-md" style={{ touchAction: "none" }}>
+            <div className="absolute top-0 inset-x-0 z-20 flex justify-center py-6 rounded-t-3xl backdrop-blur-md" style={{ touchAction: "none" }}>
               <div className="w-10 h-1 rounded-full bg-muted-foreground/40" />
             </div>
 
@@ -848,7 +849,7 @@ export function MatchDetail() {
                     <span style={{ color: getTeamColors(t2).ink }}>{t2}</span>
                   </h1>
                   <Badge variant={match.state === "Completed" ? "secondary" : "emerald"}
-                    className="mt-2">
+                    className="mt-2 py-2">
                       {formatWhen(match.startDate)}
                     {match.venueInfo?.ground ? ` · ${match.venueInfo.ground.length > 35 ? match.venueInfo.ground.substring(0, 35) + "..." : match.venueInfo.ground}` : ""}
                     {match.venueInfo?.city ? ` · ${match.venueInfo.city}` : ""}
