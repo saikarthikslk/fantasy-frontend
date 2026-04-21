@@ -585,7 +585,7 @@ function SelectedByContent({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-6 pb-4 pt-5 shrink-0">
+      <div className="p-6 pb-4 pt-5 shrink-0" data-drag-zone="true">
         <p className="text-[11px] text-muted-foreground tracking-wide uppercase mb-3">
           Player · {player.role}
         </p>
@@ -771,10 +771,11 @@ function SelectedByDrawer({
     const onTouchStart = (e: TouchEvent) => {
       const scrollEl = scrollRef.current;
       const inScrollArea = scrollEl?.contains(e.target as Node);
-      startedInScrollArea.current = !!inScrollArea;
+      const inDragZone = !!(e.target as HTMLElement)?.closest?.('[data-drag-zone="true"]');
+      startedInScrollArea.current = !!inScrollArea && !inDragZone;
       scrolledDuringTouch.current = false;
       dragStartY.current = e.touches[0].clientY;
-      isDragging.current = !inScrollArea;
+      isDragging.current = !inScrollArea || inDragZone;
     };
 
     const onTouchMove = (e: TouchEvent) => {
@@ -860,7 +861,7 @@ function SelectedByDrawer({
               transition: dragY > 0 ? "none" : "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
             }}
           >
-            <div className="absolute top-0 inset-x-0 z-20 flex justify-center py-3 rounded-t-3xl backdrop-blur-md" style={{ touchAction: "none" }}>
+            <div className="absolute top-0 inset-x-0 z-20 flex justify-center py-6 rounded-t-3xl backdrop-blur-md" style={{ touchAction: "none" }}>
               <div className="w-10 h-1 rounded-full bg-muted-foreground/40" />
             </div>
             <div ref={scrollRef} className="overflow-y-auto flex-1 min-h-0 pt-2" style={{ overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>

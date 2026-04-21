@@ -231,7 +231,7 @@ export default function TeamPreview({ matchId, dreamId, lbEntry = null, teamName
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-6 pb-4 pt-5 shrink-0">
+      <div className="p-6 pb-4 pt-5 shrink-0" data-drag-zone="true">
         <div className="flex items-center gap-2 mb-3">
           <p className="text-[11px] text-muted-foreground tracking-wide uppercase">
             Squad · {playerEntities.length} players
