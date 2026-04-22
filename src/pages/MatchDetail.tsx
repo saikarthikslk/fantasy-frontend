@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { ApiMatch, ApiPlayer, ScorecardInnings } from "../types/api";
 import TeamPreview from "./TeamPreview";
 import TeamComparison from "./TeamComparison";
@@ -387,9 +387,57 @@ export function MatchDetail() {
   const { matchId: mid } = useParams<{ matchId: string }>();
   const matchId = Number(mid);
 
-  const [sheetDid, setSheetDid] = useState<number | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = ((): DetailTab => {
+    const t = searchParams.get("tab");
+    return t === "leaderboard" || t === "playerstats" ? t : "scorecard";
+  })();
+  const sheetDidParam = searchParams.get("did");
+  const sheetDid = sheetDidParam != null && sheetDidParam !== "" && Number.isFinite(Number(sheetDidParam))
+    ? Number(sheetDidParam)
+    : null;
   const [sheetTab, setSheetTab] = useState<"squad" | "compare">("squad");
-  const [tab, setTab] = useState<DetailTab>("scorecard");
+
+  // True when this tab/sheet URL state was pushed via our UI (vs. direct load / refresh).
+  // Lets close actions pop history via navigate(-1) for a clean back/forward stack,
+  // and fall back to a clean replace when nothing to pop (direct page load).
+  const didPushSheetRef = useRef(false);
+
+  const setTab = (next: DetailTab) => {
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      if (next === "scorecard") p.delete("tab"); else p.set("tab", next);
+      p.delete("did");
+      return p;
+    });
+  };
+
+  const openSheet = (did: number, view: "squad" | "compare" = "squad") => {
+    setSheetTab(view);
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      p.set("did", String(did));
+      return p;
+    });
+    didPushSheetRef.current = true;
+  };
+
+  const closeSheet = () => {
+    if (didPushSheetRef.current) {
+      didPushSheetRef.current = false;
+      navigate(-1);
+    } else {
+      setSearchParams((prev) => {
+        const p = new URLSearchParams(prev);
+        p.delete("did");
+        return p;
+      }, { replace: true });
+    }
+  };
+  // Keep a live ref so native touch listeners don't need to rebind per render.
+  const closeSheetRef = useRef(closeSheet);
+  closeSheetRef.current = closeSheet;
+
   const tabsRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -479,7 +527,7 @@ export function MatchDetail() {
     const onTouchEnd = () => {
       if (!isDragging.current) return;
       isDragging.current = false;
-      if (dragYRef.current > 120) setSheetDid(null);
+      if (dragYRef.current > 120) closeSheetRef.current();
       dragYRef.current = 0;
       setDragY(0);
     };
@@ -660,7 +708,7 @@ export function MatchDetail() {
     }
 
     if (e.key === "Escape" && sheetDid != null) {
-      setSheetDid(null);
+      closeSheet();
       return true;
     }
 
@@ -730,7 +778,7 @@ export function MatchDetail() {
 
       {/* Sheet — desktop: Radix side-sheet, mobile: custom bottom-sheet */}
       {!isMobile && (
-        <Sheet open={isSheetOpen} onOpenChange={(open) => { if (!open) setSheetDid(null) }}>
+        <Sheet open={isSheetOpen} onOpenChange={(open) => { if (!open) closeSheet() }}>
           <SheetContent side="right" className="p-0 flex flex-col overflow-hidden sm:max-w-md">
             <SheetTitle className="sr-only">
               {sheetTab === "compare" ? "Compare Teams" : "Squad Preview"}
@@ -776,7 +824,7 @@ export function MatchDetail() {
           <div
             className="fixed inset-0 z-50 bg-black/50"
             style={{ opacity: sheetEntered ? 1 : 0, transition: "opacity 300ms ease" }}
-            onClick={() => setSheetDid(null)}
+            onClick={() => closeSheet()}
           />
 
           {/* Bottom sheet */}
@@ -796,7 +844,7 @@ export function MatchDetail() {
 
             {/* Tab toggle — only when viewing someone else's team */}
             {canShowCompare && (
-              <div className="relative flex backdrop-blur-md bg-white/10 border border-white/15 rounded-full p-0.5 mx-4 mt-10 mb-1 shrink-0 z-10">
+              <div className="relative flex backdrop-blur-md bg-white/10 border border-white/15 rounded-full p-0.5 mx-4 mt-16 mb-1 shrink-0 z-10">
                 <div
                   className="absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-full bg-primary shadow-sm transition-transform duration-300 ease-out"
                   style={{ transform: sheetTab === "compare" ? "translateX(calc(100% + 4px))" : "translateX(0)" }}
@@ -857,7 +905,7 @@ export function MatchDetail() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {isTeamCreated && myDreamId != null && (
-                  <Button variant="outline" onClick={() => { setSheetDid(myDreamId); setSheetTab("squad"); }}>
+                  <Button variant="outline" onClick={() => openSheet(myDreamId, "squad")}>
                     View my squad
                   </Button>
                   )}
@@ -1071,7 +1119,7 @@ export function MatchDetail() {
                           className={`grid grid-cols-[36px_1fr_auto_40px] sm:grid-cols-[36px_40px_1fr_auto_48px] gap-2 items-center px-3 py-2.5 rounded-lg transition-colors ${
                             isMyRow ? 'bg-primary/6 border border-primary/15' : isTop3 ? 'bg-foreground/4 border border-foreground/10' : 'bg-muted/30 hover:bg-muted/50'
                           } ${canPreview ? 'cursor-pointer' : ''}`}
-                          onClick={() => { if (canPreview && row.did != null) { setSheetDid(row.did); setSheetTab("squad"); } }}
+                          onClick={() => { if (canPreview && row.did != null) openSheet(row.did, "squad"); }}
                         >
                           {/* Rank */}
                           <span className={`text-sm tabular-nums font-semibold ${
@@ -1130,7 +1178,7 @@ export function MatchDetail() {
                                 disabled={row.did == null}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (row.did != null) { setSheetDid(row.did); setSheetTab("squad"); }
+                                  if (row.did != null) openSheet(row.did, "squad");
                                 }}
                               >
                                 <Eye className="h-3.5 w-3.5" />

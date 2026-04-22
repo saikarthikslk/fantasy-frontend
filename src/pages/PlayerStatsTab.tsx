@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type {
   MatchLeaderboardEntry,
   MatchLbPlayer,
@@ -906,7 +907,33 @@ export default function PlayerStatsTab({
   const [teamFilter, setTeamFilter] = useState<string>("ALL");
   const [myXIOnly, setMyXIOnly] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("points-desc");
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const selectedPlayerId = searchParams.get("pid");
+  // True when we pushed the pid; lets close pop cleanly via back. Direct-load falls back to replace.
+  const didPushPidRef = useRef(false);
+
+  const openPlayer = (pid: string) => {
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      p.set("pid", pid);
+      return p;
+    });
+    didPushPidRef.current = true;
+  };
+  const closePlayer = () => {
+    if (didPushPidRef.current) {
+      didPushPidRef.current = false;
+      navigate(-1);
+    } else {
+      setSearchParams((prev) => {
+        const p = new URLSearchParams(prev);
+        p.delete("pid");
+        return p;
+      }, { replace: true });
+    }
+  };
 
   const hasTeam = dreamTeam != null;
   const matchStarted = isLive || match?.state === "Completed";
@@ -1174,7 +1201,7 @@ export default function PlayerStatsTab({
             player={p}
             rank={sortKey === "points-desc" ? ranks[i] : i + 1}
             showMedals={sortKey === "points-desc"}
-            onClick={matchStarted ? () => setSelectedPlayerId(p.playerId) : undefined}
+            onClick={matchStarted ? () => openPlayer(p.playerId) : undefined}
           />
         ))}
         {filtered.length === 0 && (
@@ -1195,7 +1222,7 @@ export default function PlayerStatsTab({
       {matchStarted && (
         <SelectedByDrawer
           open={selectedPlayerId != null}
-          onClose={() => setSelectedPlayerId(null)}
+          onClose={closePlayer}
           player={selectedPlayer}
           users={selectedByUsers}
           totalUsers={lbRows.length}
