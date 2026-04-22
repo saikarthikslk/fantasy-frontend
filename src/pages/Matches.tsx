@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useMemo } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   getMatchBucket,
   type MatchTab,
@@ -154,8 +154,29 @@ export function Matches() {
   const { data: rows = [], isLoading: loading, error: queryError } = useMatches()
   const error = queryError ? (queryError instanceof Error ? queryError.message : 'Failed to load matches') : null
 
-  const [view, setView] = useState<View>('current')
-  const [page, setPage] = useState(1)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const view: View = searchParams.get('view') === 'completed' ? 'completed' : 'current'
+  const pageParam = Number(searchParams.get('page'))
+  const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1
+
+  const setView = (next: View) => {
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev)
+      if (next === 'current') p.delete('view'); else p.set('view', next)
+      p.delete('page')
+      return p
+    })
+  }
+
+  const setPage = (updater: number | ((prev: number) => number)) => {
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev)
+      const current = Number(p.get('page')) || 1
+      const next = typeof updater === 'function' ? updater(current) : updater
+      if (next <= 1) p.delete('page'); else p.set('page', String(next))
+      return p
+    }, { replace: true })
+  }
 
   const { live, upcoming, completed } = useMemo(() => {
     const buckets: Record<MatchTab, ApiMatch[]> = { upcoming: [], live: [], completed: [] }
@@ -185,7 +206,7 @@ export function Matches() {
             Pick a match, then create your dream team
           </p>
         </div>
-        <Select value={view} onValueChange={(v) => { setView(v as View); setPage(1) }}>
+        <Select value={view} onValueChange={(v) => setView(v as View)}>
           <SelectTrigger className="w-[220px]">
             <SelectValue />
           </SelectTrigger>

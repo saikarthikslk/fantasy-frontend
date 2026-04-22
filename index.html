@@ -12,6 +12,16 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Legacy HashRouter redirect: /#/matches/123?x=1 → /matches/123?x=1
+      (function () {
+        var h = window.location.hash;
+        if (h.length > 2 && h.charAt(1) === "/") {
+          var rest = h.slice(1);
+          window.history.replaceState(null, "", window.location.pathname.replace(/\/$/, "") + rest);
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
