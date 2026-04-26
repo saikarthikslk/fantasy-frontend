@@ -10,17 +10,14 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ImageCropDialog } from '@/components/ImageCropDialog'
 import { Switch } from '@/components/ui/switch'
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useUserProfile, useUpdateGameName, useUploadProfilePicture, useUpdateAutoTeam } from '@/hooks/useQueries'
+import type { ReplacementMethod } from '@/types/api'
 import {
   Loader2,
   AlertCircle,
@@ -31,7 +28,6 @@ import {
   FlaskConical,
   Keyboard,
   ChevronRight,
-  Info,
 } from 'lucide-react'
 import { useKeyboard } from '@/keyboard/useKeyboard'
 
@@ -67,6 +63,7 @@ export function Profile() {
   const updateGameNameMutation = useUpdateGameName()
   const uploadPictureMutation = useUploadProfilePicture()
   const autoTeamMutation = useUpdateAutoTeam()
+  const [replacementMethod, setReplacementMethod] = useState<ReplacementMethod>('overall')
 
   const [gameName, setGameName] = useState('')
   const [savedProfileUrl, setSavedProfileUrl] = useState<string | null>(null)
@@ -296,41 +293,19 @@ export function Profile() {
           <CardDescription>Experimental features you can try out</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 min-w-0">
+          {/* Auto-pick Smart XI */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
               <label htmlFor="autoteam" className="text-sm font-medium cursor-pointer">
                 Auto-pick Smart XI
               </label>
-              {/* Tooltip for desktop hover */}
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="hidden sm:inline-flex text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                      <Info className="h-3.5 w-3.5" />
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-60 text-center">
-                    If you miss picking your team before a match, we'll auto-select a Smart XI for you. A 10% score deduction applies for using this feature.
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              {/* Popover for mobile tap */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="sm:hidden text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                  >
-                    <Info className="h-3.5 w-3.5" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent side="top" className="max-w-60 text-center">
-                  If you miss picking your team before a match, we'll auto-select a Smart XI for you. A 10% score deduction applies for using this feature.
-                </PopoverContent>
-              </Popover>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                Miss the deadline? We'll auto-pick a balanced XI for you — 10% score deduction applies.
+              </p>
             </div>
             <Switch
               id="autoteam"
+              className="mt-1 shrink-0"
               checked={user?.autoteam ?? true}
               disabled={autoTeamMutation.isPending}
               onCheckedChange={(checked) => {
@@ -339,6 +314,37 @@ export function Profile() {
                 })
               }}
             />
+          </div>
+
+          {/* Bench replacement method */}
+          <div className="flex items-start justify-between gap-4 mt-4 pt-4 border-t">
+            <div className="min-w-0 flex-1">
+              <label htmlFor="replacement-method" className="text-sm font-medium cursor-pointer">
+                Bench replacement
+              </label>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                Got a pick who didn't make the playing XI?{' '}
+                {replacementMethod === 'overall'
+                  ? "We'll swap them for the best overall scorer from past matches."
+                  : "We'll swap them for the best scorer in the same role from past matches."}
+                {' '}Each replacement's score counts at 90%. Final Squad stays within fantasy rules.
+              </p>
+            </div>
+            <Select
+              value={replacementMethod}
+              onValueChange={(value) => {
+                setReplacementMethod(value as ReplacementMethod)
+                showSuccess('Preference updated!')
+              }}
+            >
+              <SelectTrigger id="replacement-method" className="w-[150px] shrink-0 mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="overall">Overall score</SelectItem>
+                <SelectItem value="role">Same role</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Keyboard Shortcuts — desktop only */}

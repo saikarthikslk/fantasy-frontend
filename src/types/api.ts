@@ -1,3 +1,6 @@
+/** Strategy for auto-replacing benched players after match start. */
+export type ReplacementMethod = 'role' | 'overall'
+
 /** User profile type */
 export type ApiUser = {
   id?: string
