@@ -1,5 +1,5 @@
 import { ChevronLeft } from 'lucide-react'
-import { getTeamColors } from '@/fantasy/teamColors'
+import { getTeamDotStyle } from '@/fantasy/teamColors'
 
 interface StepIndicatorProps {
   step: 1 | 2
@@ -9,7 +9,7 @@ interface StepIndicatorProps {
   teamCounts?: { t1: string; t2: string; nTeam1: number; nTeam2: number }
 }
 
-function TeamDots({ label, count, max, filledClass }: { label: string; count: number; max: number; filledClass: string }) {
+function TeamDots({ label, count, max, filledStyle }: { label: string; count: number; max: number; filledStyle: { backgroundColor: string } }) {
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider w-8 text-right shrink-0">{label}</span>
@@ -18,8 +18,9 @@ function TeamDots({ label, count, max, filledClass }: { label: string; count: nu
           <div
             key={i}
             className={`h-[6px] w-[6px] rounded-full transition-all duration-200 ${
-              i < count ? filledClass : 'bg-muted-foreground/15'
-            } ${i < count ? 'scale-110' : ''}`}
+              i < count ? 'scale-110' : ''
+            }`}
+            style={i < count ? filledStyle : { backgroundColor: 'hsl(var(--muted-foreground) / 0.15)' }}
           />
         ))}
       </div>
@@ -48,8 +49,8 @@ export function StepIndicator({ step, onBack, title, subtitle, teamCounts }: Ste
 
         {teamCounts && (
           <div className="flex flex-col gap-0.5 shrink-0">
-            <TeamDots label={teamCounts.t1} count={teamCounts.nTeam1} max={7} filledClass={getTeamColors(teamCounts.t1).dot} />
-            <TeamDots label={teamCounts.t2} count={teamCounts.nTeam2} max={7} filledClass={getTeamColors(teamCounts.t2).dot} />
+            <TeamDots label={teamCounts.t1} count={teamCounts.nTeam1} max={7} filledStyle={getTeamDotStyle(teamCounts.t1)} />
+            <TeamDots label={teamCounts.t2} count={teamCounts.nTeam2} max={7} filledStyle={getTeamDotStyle(teamCounts.t2)} />
           </div>
         )}
 

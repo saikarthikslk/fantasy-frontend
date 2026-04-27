@@ -49,9 +49,8 @@ export function Step1PlayerPicker({
     scrollRef.current?.scrollTo(0, 0)
   }, [roleFilter])
 
-  const filteredByRole = useMemo(() => {
-    if (roleFilter === 'ALL') return players
-    return players.filter((p) => normalizeRole(p.type) === roleFilter)
+  const pool = useMemo(() => {
+    return roleFilter === 'ALL' ? players : players.filter((p) => normalizeRole(p.type) === roleFilter)
   }, [players, roleFilter])
 
   const renderCard = (p: ApiPlayer) => {
@@ -89,15 +88,15 @@ export function Step1PlayerPicker({
         onClearAll={onClearAll}
       />
 
-      {/* Single role-grouped pool */}
+      {/* Player pool — single list with categories */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0">
-        <div className="px-4 pt-4 pb-3">
+        <div className="pt-3 pb-2">
           <PlayerPool
-            players={filteredByRole}
+            players={pool}
             roleFilter={roleFilter}
             isAnnounced={isAnnounced}
             renderCard={renderCard}
-            gridClass="grid-cols-1"
+            useEdgeToEdgeBanners={true}
           />
         </div>
       </div>
