@@ -82,6 +82,8 @@ export type ApiMatchSelection = {
   smartTeam?: any
   /** true once playing XI is announced (~30 min before match). */
   isannounced?: boolean
+  /** Cumulative count of times this match's detail page has been opened. */
+  views?: number
 }
 
 export type MatchLbPlayer = {
