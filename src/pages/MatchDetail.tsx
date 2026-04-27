@@ -888,9 +888,18 @@ export function MatchDetail() {
             <CardContent className="pt-6 relative">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                  <Badge variant="secondary" className="mb-3">
-                    {match.seriesName ?? "Cricket"}
-                  </Badge>
+                  <div className="flex items-center gap-2 mb-3 flex-wrap">
+                    <Badge variant="secondary">
+                      {match.seriesName ?? "Cricket"}
+                    </Badge>
+                    {teamCreationLocked && typeof matchData?.views === "number" && (
+                      <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
+                        <Eye className="h-3 w-3" />
+                        {matchData.views.toLocaleString("en-IN")}
+                        <span className="text-muted-foreground/70">{matchData.views === 1 ? "view" : "views"}</span>
+                      </span>
+                    )}
+                  </div>
                   <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
                     <span style={{ color: getTeamColors(t1).ink }}>{t1}</span>
                     <span className="text-muted-foreground font-normal"> vs </span>

@@ -1,12 +1,11 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import type { ApiMatch, ApiPlayer } from '@/types/api'
 import { normalizeRole, playerKey, tryAddPlayer, SQUAD_SIZE, type FantasyRole } from '@/fantasy/dream11Rules'
-import { playerImageUrl } from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { RoleFilterTabs } from '../components/RoleFilterTabs'
 import { PlayerPoolCard } from '../components/PlayerPoolCard'
-import { CategorySection } from '../components/CategorySection'
+import { PlayerPool } from '../components/PlayerPool'
 import { StatusBanner } from '../components/StatusBanner'
 import { ChevronRight, Sparkles } from 'lucide-react'
 import { Kbd } from '@/components/ui/kbd'
@@ -40,7 +39,6 @@ interface Step1Props {
 export function Step1PlayerPicker({
   players, matchMeta, byId, selected, selectedList, roleCounts,
   creditsLeft, hint, squadValid, validationErrors,
-  t1, t2, t1Id, t2Id,
   onPick, onClearAll, onNext, onSmartXI, smartXILoading,
   apiError, isAnnounced,
 }: Step1Props) {
@@ -51,13 +49,10 @@ export function Step1PlayerPicker({
     scrollRef.current?.scrollTo(0, 0)
   }, [roleFilter])
 
-  const pool = useMemo(() => {
-    const base = roleFilter === 'ALL' ? players : players.filter((p) => normalizeRole(p.type) === roleFilter)
-    return {
-      team1: base.filter((p) => p.team?.teamId === t1Id),
-      team2: base.filter((p) => p.team?.teamId === t2Id),
-    }
-  }, [players, roleFilter, t1Id, t2Id])
+  const filteredByRole = useMemo(() => {
+    if (roleFilter === 'ALL') return players
+    return players.filter((p) => normalizeRole(p.type) === roleFilter)
+  }, [players, roleFilter])
 
   const renderCard = (p: ApiPlayer) => {
     const pk = playerKey(p)
@@ -94,48 +89,16 @@ export function Step1PlayerPicker({
         onClearAll={onClearAll}
       />
 
-      {/* Player pool — two team columns */}
+      {/* Single role-grouped pool */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0">
-        <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-border">
-          {/* Team 1 */}
-          <div className="px-3 pt-3 pb-2">
-            <div className="flex items-center gap-2 mb-2">
-              {matchMeta?.team1?.imageId && (
-                <img
-                  src={playerImageUrl(matchMeta.team1.imageId)}
-                  alt=""
-                  className="h-5 w-5 rounded-full object-cover bg-muted"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                />
-              )}
-              <span className="text-xs font-semibold uppercase tracking-wider">{t1}</span>
-            </div>
-            {pool.team1.length > 0 ? (
-              <CategorySection players={pool.team1} isAnnounced={isAnnounced} renderCard={renderCard} />
-            ) : (
-              <p className="text-xs text-muted-foreground py-4 text-center">No players for this role</p>
-            )}
-          </div>
-
-          {/* Team 2 */}
-          <div className="px-3 pt-3 pb-2">
-            <div className="flex items-center gap-2 mb-2">
-              {matchMeta?.team2?.imageId && (
-                <img
-                  src={playerImageUrl(matchMeta.team2.imageId)}
-                  alt=""
-                  className="h-5 w-5 rounded-full object-cover bg-muted"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                />
-              )}
-              <span className="text-xs font-semibold uppercase tracking-wider">{t2}</span>
-            </div>
-            {pool.team2.length > 0 ? (
-              <CategorySection players={pool.team2} isAnnounced={isAnnounced} renderCard={renderCard} />
-            ) : (
-              <p className="text-xs text-muted-foreground py-4 text-center">No players for this role</p>
-            )}
-          </div>
+        <div className="px-4 pt-4 pb-3">
+          <PlayerPool
+            players={filteredByRole}
+            roleFilter={roleFilter}
+            isAnnounced={isAnnounced}
+            renderCard={renderCard}
+            gridClass="grid-cols-1"
+          />
         </div>
       </div>
 
