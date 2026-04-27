@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { usePageShortcuts, useKeyboard } from '@/keyboard/useKeyboard'
 import type { ApiMatch, ApiPlayer } from '@/types/api'
 import {
-  creditsForPlayer,
   normalizeRole,
   playerKey,
   roleLabel,
@@ -23,7 +22,8 @@ import { Step2CaptainPicker } from './steps/Step2CaptainPicker'
 import { StepIndicator, TeamDots } from './components/StepIndicator'
 
 // Desktop-shared UI
-import { CategorySection } from './components/CategorySection'
+import { PlayerPool } from './components/PlayerPool'
+import { PlayerPoolCard } from './components/PlayerPoolCard'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -405,7 +405,7 @@ interface DesktopProps {
 
 function DesktopCreateTeam({
   action, onClose, draft, players, matchMeta,
-  t1, t2, t1Id, t2Id, apiError, saving, success, onSubmit,
+  t1, t2, apiError, saving, success, onSubmit,
   onSmartXI, smartXILoading, smartXIPicked, onDismissSmartHint, isAnnounced,
 }: DesktopProps) {
   const [roleFilter, setRoleFilter] = useState<'ALL' | FantasyRole>('WK')
@@ -422,13 +422,10 @@ function DesktopCreateTeam({
     pickPlayer, clearAll, removePlayer,
   } = draft
 
-  const pool = useMemo(() => {
-    const base = roleFilter === 'ALL' ? players : players.filter((p) => normalizeRole(p.type) === roleFilter)
-    return {
-      team1: base.filter((p) => p.team?.teamId === t1Id),
-      team2: base.filter((p) => p.team?.teamId === t2Id),
-    }
-  }, [players, roleFilter, t1Id, t2Id])
+  const filteredByRole = useMemo(() => {
+    if (roleFilter === 'ALL') return players
+    return players.filter((p) => normalizeRole(p.type) === roleFilter)
+  }, [players, roleFilter])
 
   const roleTabs: Array<'ALL' | FantasyRole> = ['WK', 'BAT', 'AR', 'BOWL', 'ALL']
 
@@ -492,36 +489,24 @@ function DesktopCreateTeam({
   const renderPlayerTile = (p: ApiPlayer) => {
     const pk = playerKey(p)
     const on = selected.has(pk)
-    const cr = creditsForPlayer(p)
-    const role = normalizeRole(p.type)
     const res = on ? ({ ok: true } as const) : tryAddPlayer(p, selected, byId, matchMeta)
     const disabled = !on && !res.ok
-    const colors = getTeamColors(p.team?.teamSName)
     return (
-      <button
+      <PlayerPoolCard
         key={pk}
-        type="button"
+        player={p}
+        isSelected={on}
+        isDisabled={disabled}
         onClick={() => pickPlayer(p)}
-        className={`flex items-center gap-3 w-full text-left p-3 rounded-xl border transition-all cursor-pointer ${
-          on ? colors.selected : disabled ? 'opacity-30 cursor-not-allowed' : 'border-transparent bg-muted/40 hover:bg-muted/70'
-        }`}
-      >
-        <img className="h-10 w-10 rounded-full object-cover bg-muted shrink-0" src={playerImageUrl(p.imageId)} alt="" loading="lazy" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{p.name}</p>
-          <p className="text-[11px] text-muted-foreground">{role}</p>
-        </div>
-        <span className="text-sm font-semibold tabular-nums shrink-0 text-muted-foreground">{cr.toFixed(1)}</span>
-        {on && <Check className={`h-4 w-4 shrink-0 ${colors.check}`} />}
-      </button>
+      />
     )
   }
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Top bar */}
+      {/* Top bar — capped width so controls don't sprawl on wide viewports */}
       <header className="shrink-0 border-b">
-        <div className="flex items-center gap-4 px-5 sm:px-8 py-4">
+        <div className="max-w-6xl mx-auto flex items-center gap-4 px-5 sm:px-8 py-4">
           <button onClick={() => action === 'new' && selectedList.length > 0 ? setDiscardOpen(true) : onClose()} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0">
             <ChevronLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Back</span>
@@ -544,7 +529,7 @@ function DesktopCreateTeam({
         </div>
 
         {/* Stats strip */}
-        <div className="flex items-center gap-2.5 md:gap-4 px-5 sm:px-8 pb-4 overflow-x-auto">
+        <div className="max-w-6xl mx-auto flex items-center gap-2.5 md:gap-4 px-5 sm:px-8 pb-4 overflow-x-auto">
           <div className="shrink-0">
             <div className="flex items-baseline gap-1">
               <span className="text-lg font-bold tabular-nums">{selectedList.length}</span>
@@ -613,63 +598,43 @@ function DesktopCreateTeam({
       <div ref={containerRef} className="flex-1 min-h-0 flex flex-row">
         {/* Player pool */}
         <div className="flex-1 min-h-0 min-w-[720px] flex flex-col overflow-hidden">
-          {/* Role filter */}
-          <div className="shrink-0 flex items-center gap-1 h-11 px-6 border-b overflow-x-auto">
-            {roleTabs.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setRoleFilter(tab)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
-                  roleFilter === tab ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                }`}
-              >
-                {tab === 'ALL' ? 'All' : roleLabel(tab)}
-              </button>
-            ))}
-            {selectedList.length > 0 && (
-              <>
-                <div className="w-px h-5 bg-border shrink-0 mx-1" />
+          {/* Role filter — contained to same max-width as content */}
+          <div className="shrink-0 border-b overflow-x-auto">
+            <div className="flex items-center gap-1 h-11 max-w-3xl mx-auto px-8 lg:px-12">
+              {roleTabs.map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setRoleFilter(tab)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                    roleFilter === tab ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
+                >
+                  {tab === 'ALL' ? 'All' : roleLabel(tab)}
+                </button>
+              ))}
+              {selectedList.length > 0 && (
                 <button
                   type="button"
                   onClick={() => clearAll()}
-                  className="px-3 py-1.5 rounded-full text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors cursor-pointer whitespace-nowrap"
+                  className="ml-auto px-3 py-1.5 rounded-full text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors cursor-pointer whitespace-nowrap"
                 >
                   Clear all
                 </button>
-              </>
-            )}
+              )}
+            </div>
           </div>
 
-          {/* Two team columns */}
+          {/* Single role-grouped pool — single column, contained for breathing room */}
           <div key={roleFilter} className="flex-1 overflow-y-scroll">
-            <div className="grid grid-cols-2 divide-x divide-border">
-              <div className="px-5 pt-4 pb-3">
-                <div className="flex items-center gap-2 mb-2.5">
-                  {matchMeta?.team1?.imageId && (
-                    <img src={playerImageUrl(matchMeta.team1.imageId)} alt="" className="h-5 w-5 rounded-full object-cover bg-muted" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-                  )}
-                  <span className="text-xs font-semibold uppercase tracking-wider">{t1}</span>
-                </div>
-                {pool.team1.length > 0 ? (
-                  <CategorySection players={pool.team1} isAnnounced={isAnnounced} renderCard={renderPlayerTile} />
-                ) : (
-                  <p className="text-xs text-muted-foreground py-4 text-center">No players for this role</p>
-                )}
-              </div>
-              <div className="px-5 pt-4 pb-3">
-                <div className="flex items-center gap-2 mb-2.5">
-                  {matchMeta?.team2?.imageId && (
-                    <img src={playerImageUrl(matchMeta.team2.imageId)} alt="" className="h-5 w-5 rounded-full object-cover bg-muted" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-                  )}
-                  <span className="text-xs font-semibold uppercase tracking-wider">{t2}</span>
-                </div>
-                {pool.team2.length > 0 ? (
-                  <CategorySection players={pool.team2} isAnnounced={isAnnounced} renderCard={renderPlayerTile} />
-                ) : (
-                  <p className="text-xs text-muted-foreground py-4 text-center">No players for this role</p>
-                )}
-              </div>
+            <div className="px-8 lg:px-12 py-7 max-w-3xl mx-auto">
+              <PlayerPool
+                players={filteredByRole}
+                roleFilter={roleFilter}
+                isAnnounced={isAnnounced}
+                renderCard={renderPlayerTile}
+                gridClass="grid-cols-1"
+              />
             </div>
           </div>
         </div>
