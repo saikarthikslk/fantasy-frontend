@@ -20,9 +20,9 @@ export function CaptainCard({ player, isCaptain, isViceCaptain, onClick }: Capta
       aria-pressed={assigned}
       className={`relative flex items-center gap-3.5 w-full text-left p-4 rounded-2xl border-2 transition-all cursor-pointer active:scale-[0.97] ${
         isCaptain
-          ? 'border-blue-500 bg-blue-500/8 shadow-md shadow-blue-500/10'
+          ? 'border-gold/20 bg-gold/5 shadow-md shadow-gold/10'
           : isViceCaptain
-          ? 'border-violet-500 bg-violet-500/8 shadow-md shadow-violet-500/10'
+          ? 'border-primary/20 bg-primary/5 shadow-md shadow-primary/10'
           : 'border-border bg-card hover:border-muted-foreground/30 hover:bg-muted/30'
       }`}
     >
@@ -30,7 +30,7 @@ export function CaptainCard({ player, isCaptain, isViceCaptain, onClick }: Capta
       <div className="relative shrink-0">
         <div
           className={`h-14 w-14 rounded-full overflow-hidden bg-muted ${
-            isCaptain ? 'ring-[3px] ring-blue-500' : isViceCaptain ? 'ring-[3px] ring-violet-500' : 'ring-1 ring-border'
+            isCaptain ? 'ring-[3px] ring-gold' : isViceCaptain ? 'ring-[3px] ring-primary' : 'ring-1 ring-border'
           }`}
         >
           <img
@@ -62,8 +62,8 @@ export function CaptainCard({ player, isCaptain, isViceCaptain, onClick }: Capta
         <span
           className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-bold ${
             isCaptain
-              ? 'bg-blue-500 text-white'
-              : 'bg-violet-500 text-white'
+              ? 'bg-gold text-black'
+              : 'bg-primary text-primary-foreground'
           }`}
         >
           {isCaptain ? '2x' : '1.5x'}

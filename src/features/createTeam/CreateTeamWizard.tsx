@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { usePageShortcuts, useKeyboard } from '@/keyboard/useKeyboard'
 import type { ApiMatch, ApiPlayer } from '@/types/api'
 import {
+  creditsForPlayer,
   normalizeRole,
   playerKey,
   roleLabel,
@@ -11,7 +12,7 @@ import {
   getEffectiveCategory,
 } from '@/fantasy/dream11Rules'
 import { playerImageUrl } from '@/api/client'
-import { getTeamColors } from '@/fantasy/teamColors'
+import { getTeamChipStyles, getTeamSelectedStyles, getTeamCheckColor, getTeamDotStyle } from '@/fantasy/teamColors'
 import { useMatches, useMatch, useCreateTeam } from '@/hooks/useQueries'
 import { useTeamDraft } from './useTeamDraft'
 import { useHydrateEdit } from './useHydrateEdit'
@@ -23,7 +24,6 @@ import { StepIndicator, TeamDots } from './components/StepIndicator'
 
 // Desktop-shared UI
 import { PlayerPool } from './components/PlayerPool'
-import { PlayerPoolCard } from './components/PlayerPoolCard'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -422,9 +422,8 @@ function DesktopCreateTeam({
     pickPlayer, clearAll, removePlayer,
   } = draft
 
-  const filteredByRole = useMemo(() => {
-    if (roleFilter === 'ALL') return players
-    return players.filter((p) => normalizeRole(p.type) === roleFilter)
+  const pool = useMemo(() => {
+    return roleFilter === 'ALL' ? players : players.filter((p) => normalizeRole(p.type) === roleFilter)
   }, [players, roleFilter])
 
   const roleTabs: Array<'ALL' | FantasyRole> = ['WK', 'BAT', 'AR', 'BOWL', 'ALL']
@@ -489,24 +488,56 @@ function DesktopCreateTeam({
   const renderPlayerTile = (p: ApiPlayer) => {
     const pk = playerKey(p)
     const on = selected.has(pk)
+    const cr = creditsForPlayer(p)
+    const role = normalizeRole(p.type)
     const res = on ? ({ ok: true } as const) : tryAddPlayer(p, selected, byId, matchMeta)
     const disabled = !on && !res.ok
+    const teamShortName = p.team?.teamSName || p.team?.teamName || ''
+
+    // Get team brand colors
+    const chipStyles = getTeamChipStyles(p.team?.teamSName)
+    const selectedStyles = on ? getTeamSelectedStyles(p.team?.teamSName) : {}
+    const checkColor = getTeamCheckColor(p.team?.teamSName)
+
     return (
-      <PlayerPoolCard
+      <button
         key={pk}
-        player={p}
-        isSelected={on}
-        isDisabled={disabled}
+        type="button"
         onClick={() => pickPlayer(p)}
-      />
+        className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl border transition-all cursor-pointer ${
+          on ? 'shadow-sm' : disabled ? 'opacity-30 cursor-not-allowed' : 'border-transparent bg-muted/40 hover:bg-muted/70'
+        }`}
+        style={on ? selectedStyles : undefined}
+      >
+        {/* Avatar with team chip - 50x50 container with 40x40 image centered */}
+        <div className="relative h-[50px] w-[50px] shrink-0 flex items-center justify-center">
+          <img className="h-10 w-10 rounded-full object-cover bg-muted" src={playerImageUrl(p.imageId)} alt="" loading="lazy" />
+          {/* Team chip badge */}
+          {teamShortName && (
+            <span
+              className="absolute bottom-0 left-0 px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-tight shadow-sm"
+              style={chipStyles}
+            >
+              {teamShortName}
+            </span>
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{p.name}</p>
+          <p className="text-[11px] text-muted-foreground">{role}</p>
+        </div>
+        <span className="text-sm font-semibold tabular-nums shrink-0 text-muted-foreground">{cr.toFixed(1)}</span>
+        {on && <Check className="h-4 w-4 shrink-0" style={{ color: checkColor }} />}
+      </button>
     )
   }
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Top bar — capped width so controls don't sprawl on wide viewports */}
+      {/* Top bar */}
       <header className="shrink-0 border-b">
-        <div className="max-w-6xl mx-auto flex items-center gap-4 px-5 sm:px-8 py-4">
+        <div className="flex items-center gap-4 px-5 sm:px-8 py-4">
           <button onClick={() => action === 'new' && selectedList.length > 0 ? setDiscardOpen(true) : onClose()} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0">
             <ChevronLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Back</span>
@@ -529,7 +560,7 @@ function DesktopCreateTeam({
         </div>
 
         {/* Stats strip */}
-        <div className="max-w-6xl mx-auto flex items-center gap-2.5 md:gap-4 px-5 sm:px-8 pb-4 overflow-x-auto">
+        <div className="flex items-center gap-2.5 md:gap-4 px-5 sm:px-8 pb-4 overflow-x-auto">
           <div className="shrink-0">
             <div className="flex items-baseline gap-1">
               <span className="text-lg font-bold tabular-nums">{selectedList.length}</span>
@@ -552,8 +583,8 @@ function DesktopCreateTeam({
           </div>
           <Separator orientation="vertical" className="h-6" />
           <div className="flex flex-col gap-0.5 shrink-0">
-            <TeamDots label={t1} count={nTeam1} max={7} filledClass={getTeamColors(t1).dot} />
-            <TeamDots label={t2} count={nTeam2} max={7} filledClass={getTeamColors(t2).dot} />
+            <TeamDots label={t1} count={nTeam1} max={7} filledStyle={getTeamDotStyle(t1)} />
+            <TeamDots label={t2} count={nTeam2} max={7} filledStyle={getTeamDotStyle(t2)} />
           </div>
         </div>
       </header>
@@ -598,42 +629,63 @@ function DesktopCreateTeam({
       <div ref={containerRef} className="flex-1 min-h-0 flex flex-row">
         {/* Player pool */}
         <div className="flex-1 min-h-0 min-w-[720px] flex flex-col overflow-hidden">
-          {/* Role filter — contained to same max-width as content */}
+          {/* Role filter */}
           <div className="shrink-0 border-b overflow-x-auto">
-            <div className="flex items-center gap-1 h-11 max-w-3xl mx-auto px-8 lg:px-12">
-              {roleTabs.map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setRoleFilter(tab)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
-                    roleFilter === tab ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  }`}
-                >
-                  {tab === 'ALL' ? 'All' : roleLabel(tab)}
-                </button>
-              ))}
+            <div className="flex items-center min-w-fit">
+              {/* Role tabs with underline indicator */}
+              <div className="flex flex-1">
+                {roleTabs.map((tab) => {
+                  const isActive = roleFilter === tab
+                  const count = tab === 'ALL' ? null : roleCounts[tab]
+                  return (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => setRoleFilter(tab)}
+                      className="relative flex-1 flex items-center justify-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
+                    >
+                      <span className={isActive ? 'text-foreground' : 'text-muted-foreground'}>
+                        {tab === 'ALL' ? 'All' : roleLabel(tab)}
+                      </span>
+                      {count != null && count > 0 && (
+                        <span className={`text-[10px] tabular-nums ${isActive ? 'text-foreground/60' : 'text-muted-foreground/60'}`}>
+                          {count}
+                        </span>
+                      )}
+                      {/* Active underline indicator */}
+                      {isActive && (
+                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground" />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Clear All button */}
               {selectedList.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => clearAll()}
-                  className="ml-auto px-3 py-1.5 rounded-full text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors cursor-pointer whitespace-nowrap"
-                >
-                  Clear all
-                </button>
+                <>
+                  <div className="w-px h-5 bg-border shrink-0 mx-2" />
+                  <button
+                    type="button"
+                    onClick={() => clearAll()}
+                    className="px-4 py-3 text-sm font-medium text-destructive hover:text-destructive/80 transition-colors cursor-pointer whitespace-nowrap"
+                  >
+                    Clear
+                  </button>
+                </>
               )}
             </div>
           </div>
 
-          {/* Single role-grouped pool — single column, contained for breathing room */}
+          {/* Player pool — single list with categories */}
           <div key={roleFilter} className="flex-1 overflow-y-scroll">
-            <div className="px-8 lg:px-12 py-7 max-w-3xl mx-auto">
+            <div className="pt-4 pb-3">
               <PlayerPool
-                players={filteredByRole}
+                players={pool}
                 roleFilter={roleFilter}
                 isAnnounced={isAnnounced}
                 renderCard={renderPlayerTile}
-                gridClass="grid-cols-1"
+                useEdgeToEdgeBanners={true}
               />
             </div>
           </div>

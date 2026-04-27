@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react'
 import { playerImageUrl } from '@/api/client'
 import { creditsForPlayer, normalizeRole } from '@/fantasy/dream11Rules'
-import { getTeamColors } from '@/fantasy/teamColors'
+import { getTeamChipStyles, getTeamSelectedStyles, getTeamCheckColor } from '@/fantasy/teamColors'
 import type { ApiPlayer } from '@/types/api'
 
 interface PlayerPoolCardProps {
@@ -14,54 +14,52 @@ interface PlayerPoolCardProps {
 export function PlayerPoolCard({ player, isSelected, isDisabled, onClick }: PlayerPoolCardProps) {
   const cr = creditsForPlayer(player)
   const role = normalizeRole(player.type)
-  const teamShort = player.team?.teamSName ?? player.team?.teamName ?? ''
-  const colors = getTeamColors(player.team?.teamSName)
+  const teamShortName = player.team?.teamSName || player.team?.teamName || ''
+
+  // Get team brand colors
+  const chipStyles = getTeamChipStyles(player.team?.teamSName)
+  const selectedStyles = isSelected ? getTeamSelectedStyles(player.team?.teamSName) : {}
+  const checkColor = getTeamCheckColor(player.team?.teamSName)
 
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={isDisabled}
-      className={`flex items-center gap-3 w-full text-left p-3 rounded-xl border transition-all cursor-pointer ${
+      className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl border transition-all cursor-pointer ${
         isSelected
-          ? colors.selected
+          ? 'shadow-sm'
           : isDisabled
           ? 'opacity-30 cursor-not-allowed'
           : 'border-transparent bg-muted/40 hover:bg-muted/70 active:scale-[0.98]'
       }`}
+      style={isSelected ? selectedStyles : undefined}
     >
-      {/* Avatar + team badge column */}
-      <div className="flex flex-col items-center gap-1 shrink-0 w-11">
+      {/* Avatar with team chip - 50x50 container with 40x40 image centered */}
+      <div className="relative h-[50px] w-[50px] shrink-0 flex items-center justify-center">
         <img
           className="h-10 w-10 rounded-full object-cover bg-muted"
           src={playerImageUrl(player.imageId)}
           alt=""
           loading="lazy"
         />
-        {teamShort && (
+        {/* Team chip badge */}
+        {teamShortName && (
           <span
-            className="px-1.5 py-px rounded-md text-[9px] font-bold uppercase tracking-wider leading-none"
-            style={{
-              backgroundColor: `${colors.accent}1F`,
-              color: colors.ink,
-            }}
+            className="absolute bottom-0 left-0 px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-tight shadow-sm"
+            style={chipStyles}
           >
-            {teamShort}
+            {teamShortName}
           </span>
         )}
       </div>
 
-      {/* Name + role */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{player.name}</p>
         <p className="text-[11px] text-muted-foreground">{role}</p>
       </div>
-
-      {/* Credits + check */}
-      <div className="flex items-center gap-2 shrink-0">
-        <span className="text-sm font-semibold tabular-nums text-muted-foreground">{cr.toFixed(1)}</span>
-        {isSelected && <Check className={`h-4 w-4 ${colors.check}`} />}
-      </div>
+      <span className="text-sm font-semibold tabular-nums shrink-0 text-muted-foreground">{cr.toFixed(1)}</span>
+      {isSelected && <Check className="h-4 w-4 shrink-0" style={{ color: checkColor }} />}
     </button>
   )
 }

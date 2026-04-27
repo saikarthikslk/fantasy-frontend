@@ -1,72 +1,100 @@
-/** IPL team selection tint styles keyed by short name */
+import { withOpacity, adjustForDarkBackground, getContrastText } from './colorUtils'
+
+/** Official IPL team brand colors */
+export const TEAM_COLORS = {
+  RCB:  '#cd0d13',
+  DC:   '#06245F',
+  CSK:  '#FECA05',
+  MI:   '#1535C1',
+  SRH:  '#EF4024',
+  PBKS: '#D8D8D8',
+  KKR:  '#3A235D',
+  RR:   '#E50493',
+  LSG:  '#F22B3F',
+  GT:   '#263B5A',
+} as const
+
+export type TeamShortName = keyof typeof TEAM_COLORS
 
 export type TeamColorStyle = {
   selected: string
   check: string
   dot: string
-  /** Raw hex accent used for inline gradients / text tints on dark surfaces. */
   accent: string
-  /** Lighter variant suitable for body text on dark backgrounds. */
   ink: string
 }
 
-const TEAM_COLOR_MAP: Record<string, TeamColorStyle> = {
-  RCB:  { selected: 'border-red-400/30 bg-red-500/8 shadow-sm',    check: 'text-red-500',    dot: 'bg-red-500',    accent: '#EF4444', ink: '#F87171' },
-  DC:   { selected: 'border-sky-400/30 bg-sky-500/8 shadow-sm',    check: 'text-sky-500',    dot: 'bg-sky-500',    accent: '#0EA5E9', ink: '#38BDF8' },
-  RR:   { selected: 'border-pink-400/30 bg-pink-500/8 shadow-sm',  check: 'text-pink-500',   dot: 'bg-pink-500',   accent: '#EC4899', ink: '#F472B6' },
-  CSK:  { selected: 'border-yellow-400/30 bg-yellow-500/8 shadow-sm', check: 'text-yellow-500', dot: 'bg-yellow-500', accent: '#EAB308', ink: '#FACC15' },
-  SRH:  { selected: 'border-orange-400/30 bg-orange-500/8 shadow-sm', check: 'text-orange-500', dot: 'bg-orange-500', accent: '#F97316', ink: '#FB923C' },
-  LSG:  { selected: 'border-cyan-400/30 bg-cyan-500/8 shadow-sm',  check: 'text-cyan-500',   dot: 'bg-cyan-500',   accent: '#06B6D4', ink: '#22D3EE' },
-  GT:   { selected: 'border-violet-400/30 bg-violet-500/8 shadow-sm', check: 'text-violet-500', dot: 'bg-violet-500', accent: '#8B5CF6', ink: '#A78BFA' },
-  MI:   { selected: 'border-blue-400/30 bg-blue-500/8 shadow-sm',  check: 'text-blue-500',   dot: 'bg-blue-500',   accent: '#3B82F6', ink: '#60A5FA' },
-  PBKS: { selected: 'border-slate-300/30 bg-slate-400/8 shadow-sm', check: 'text-slate-400',  dot: 'bg-slate-400',  accent: '#94A3B8', ink: '#94A3B8' },
-  KKR:  { selected: 'border-amber-400/30 bg-amber-500/8 shadow-sm', check: 'text-amber-500',  dot: 'bg-amber-500',  accent: '#F59E0B', ink: '#FBBF24' },
+const FALLBACK_COLOR = '#71717A'
+
+/** Get the brand color hex for a team */
+export function getTeamBrandColor(teamShortName: string | undefined | null): string {
+  if (!teamShortName) return FALLBACK_COLOR
+  return TEAM_COLORS[teamShortName.toUpperCase() as TeamShortName] ?? FALLBACK_COLOR
 }
 
-const FALLBACK: TeamColorStyle = {
-  selected: 'border-primary/20 bg-primary/5 shadow-sm',
-  check: 'text-primary',
-  dot: 'bg-primary',
-  accent: '#71717A',
-  ink: '#A1A1AA',
-}
-
-/** Resolve team color styles from a short name like "RCB", "CSK", etc. */
+/** Legacy: Get team color styles (using specific helpers) */
 export function getTeamColors(teamShortName: string | undefined | null): TeamColorStyle {
-  if (!teamShortName) return FALLBACK
-  return TEAM_COLOR_MAP[teamShortName.toUpperCase()] ?? FALLBACK
-}
-
-/**
- * Build a subtle dual-team tint for a fixture card / row.
- * - `bg`: horizontal gradient from team1 → neutral → team2
- * - `borderLeft` / `borderRight`: thin team-coloured accents on each edge
- */
-export function fixtureTint(
-  t1ShortName: string | undefined | null,
-  t2ShortName: string | undefined | null,
-  opts: { intensity?: 'subtle' | 'medium' } = {},
-): { background: string } {
-  const c1 = getTeamColors(t1ShortName)
-  const c2 = getTeamColors(t2ShortName)
-  const [edge, fade] = opts.intensity === 'medium' ? ['2A', '10'] : ['1F', '08']
+  const color = getTeamBrandColor(teamShortName)
   return {
-    background: `linear-gradient(90deg, ${c1.accent}${edge} 0%, ${c1.accent}${fade} 25%, transparent 45%, transparent 55%, ${c2.accent}${fade} 75%, ${c2.accent}${edge} 100%)`,
+    selected: 'shadow-sm',
+    check: '',
+    dot: '',
+    accent: color,
+    ink: adjustForDarkBackground(color),
   }
 }
 
-/**
- * Build a subtle single-team tint — a faint side-faded gradient plus a
- * coloured left-edge accent. Ideal for player rows where the player belongs
- * to exactly one team.
- */
-export function playerTint(
-  teamShortName: string | undefined | null,
-  opts: { intensity?: 'subtle' | 'medium' } = {},
-): { background: string } {
-  const c = getTeamColors(teamShortName)
-  const [edge, fade] = opts.intensity === 'medium' ? ['24', '0C'] : ['18', '06']
+/** Get chip styles with auto-calculated text contrast */
+export function getTeamChipStyles(teamShortName: string | undefined | null) {
+  const bg = getTeamBrandColor(teamShortName)
   return {
-    background: `linear-gradient(90deg, ${c.accent}${edge} 0%, ${c.accent}${fade} 40%, transparent 100%)`,
+    backgroundColor: bg,
+    color: getContrastText(bg),
+  }
+}
+
+/** Get selected card styles with team color and opacity */
+export function getTeamSelectedStyles(teamShortName: string | undefined | null) {
+  const color = getTeamBrandColor(teamShortName)
+  return {
+    borderColor: withOpacity(color, 0.3),
+    backgroundColor: withOpacity(color, 0.08),
+  }
+}
+
+/** Get check icon color */
+export const getTeamCheckColor = (teamShortName: string | undefined | null) =>
+  getTeamBrandColor(teamShortName)
+
+/** Get dot/indicator background style */
+export const getTeamDotStyle = (teamShortName: string | undefined | null) => ({
+  backgroundColor: getTeamBrandColor(teamShortName),
+})
+
+/** Build dual-team gradient for fixture cards */
+export function fixtureTint(
+  t1: string | undefined | null,
+  t2: string | undefined | null,
+  opts: { intensity?: 'subtle' | 'medium' } = {},
+) {
+  const c1 = getTeamBrandColor(t1)
+  const c2 = getTeamBrandColor(t2)
+  const [edge, fade] = opts.intensity === 'medium' ? ['2A', '10'] : ['1F', '08']
+
+  return {
+    background: `linear-gradient(90deg, ${c1}${edge} 0%, ${c1}${fade} 25%, transparent 45%, transparent 55%, ${c2}${fade} 75%, ${c2}${edge} 100%)`,
+  }
+}
+
+/** Build single-team gradient for player rows */
+export function playerTint(
+  team: string | undefined | null,
+  opts: { intensity?: 'subtle' | 'medium' } = {},
+) {
+  const color = getTeamBrandColor(team)
+  const [edge, fade] = opts.intensity === 'medium' ? ['24', '0C'] : ['18', '06']
+
+  return {
+    background: `linear-gradient(90deg, ${color}${edge} 0%, ${color}${fade} 40%, transparent 100%)`,
   }
 }

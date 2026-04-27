@@ -71,13 +71,13 @@ export function Step2CaptainPicker({
 
       {/* Instruction */}
       <div className="shrink-0 px-4 pt-4 pb-2">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-[10px] text-muted-foreground text-center">
           Assign Captain (2x) and Vice-Captain (1.5x) for your squad.
         </p>
       </div>
 
       {/* Player rows with C / VC chips */}
-      <div className="flex-1 overflow-y-auto min-h-0 px-4 pb-4 space-y-2">
+      <div className="flex-1 overflow-y-auto min-h-0 px-4 pb-4 pt-1 space-y-2">
         {selectedList.map((p) => {
           const pk = playerKey(p)
           const isCap = captainId === pk
@@ -88,7 +88,7 @@ export function Step2CaptainPicker({
           return (
             <div
               key={pk}
-              className="transition-all duration-300 ease-in-out origin-top pt-2 pl-2"
+              className="transition-all duration-300 ease-in-out origin-top"
               style={{
                 opacity: isRemoving ? 0 : 1,
                 transform: isRemoving ? 'scaleY(0) translateX(60px)' : 'scaleY(1) translateX(0)',
@@ -97,11 +97,11 @@ export function Step2CaptainPicker({
               }}
             >
               <div
-                className={`relative flex items-center gap-3 w-full p-3.5 rounded-2xl border-2 ${
+                className={`relative flex items-center gap-3 w-full py-2 px-3.5 rounded-xl border-2 ${
                   isCap
-                    ? 'border-blue-500 bg-blue-500/8'
+                    ? 'border-gold/20 bg-gold/5'
                     : isVc
-                    ? 'border-violet-500 bg-violet-500/8'
+                    ? 'border-primary/20 bg-primary/5'
                     : 'border-border bg-card'
                 }`}
               >
@@ -118,7 +118,7 @@ export function Step2CaptainPicker({
                 <div className="relative shrink-0">
                   <div
                     className={`h-12 w-12 rounded-full overflow-hidden bg-muted ${
-                      isCap ? 'ring-[2.5px] ring-blue-500' : isVc ? 'ring-[2.5px] ring-violet-500' : 'ring-1 ring-border'
+                      isCap ? 'ring-[2.5px] ring-gold' : isVc ? 'ring-[2.5px] ring-primary' : 'ring-1 ring-border'
                     }`}
                   >
                     <img
@@ -130,7 +130,7 @@ export function Step2CaptainPicker({
                   {(isCap || isVc) && (
                     <span
                       className={`absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full text-[9px] font-extrabold flex items-center justify-center shadow-sm ${
-                        isCap ? 'bg-blue-500 text-white' : 'bg-violet-500 text-white'
+                        isCap ? 'bg-gold text-black' : 'bg-primary text-primary-foreground'
                       }`}
                     >
                       {isCap ? 'C' : 'VC'}
@@ -151,8 +151,8 @@ export function Step2CaptainPicker({
                     onClick={() => onSelectCaptain(pk)}
                     className={`h-9 px-3 rounded-lg text-xs font-bold flex items-center justify-center cursor-pointer transition-all ${
                       isCap
-                        ? 'bg-blue-500 text-white shadow-sm'
-                        : 'bg-muted text-muted-foreground hover:bg-blue-500/15 hover:text-blue-400'
+                        ? 'bg-gold text-black shadow-sm'
+                        : 'bg-muted text-muted-foreground hover:bg-gold/15 hover:text-gold'
                     }`}
                   >
                     C
@@ -162,8 +162,8 @@ export function Step2CaptainPicker({
                     onClick={() => onSelectViceCaptain(pk)}
                     className={`h-9 px-2.5 rounded-lg text-xs font-bold flex items-center justify-center cursor-pointer transition-all ${
                       isVc
-                        ? 'bg-violet-500 text-white shadow-sm'
-                        : 'bg-muted text-muted-foreground hover:bg-violet-500/15 hover:text-violet-400'
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'bg-muted text-muted-foreground hover:bg-primary/15 hover:text-primary'
                     }`}
                   >
                     VC
