@@ -15,9 +15,9 @@ export function RoleFilterTabs({ active, roleCounts, onChange, showClearAll, onC
 
   return (
     <div className="shrink-0 border-b overflow-x-auto">
-      <div className="flex items-center min-w-fit">
+      <div className="flex items-center">
         {/* Role tabs with sliding underline indicator */}
-        <div className="relative flex flex-1">
+        <div className="relative flex flex-1 min-w-0">
           {TABS.map((tab) => {
             const isActive = active === tab
             const count = tab === 'ALL' ? null : roleCounts[tab]
@@ -26,13 +26,13 @@ export function RoleFilterTabs({ active, roleCounts, onChange, showClearAll, onC
                 key={tab}
                 type="button"
                 onClick={() => onChange(tab)}
-                className="relative flex-1 flex items-center justify-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
+                className="relative flex-1 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
               >
                 <span className={isActive ? 'text-foreground' : 'text-muted-foreground'}>
                   {tab === 'ALL' ? 'All' : roleLabel(tab)}
                 </span>
                 {count != null && count > 0 && (
-                  <span className={`text-[10px] tabular-nums ${isActive ? 'text-foreground/60' : 'text-muted-foreground/60'}`}>
+                  <span className={`text-[9px] sm:text-[10px] tabular-nums ${isActive ? 'text-foreground/60' : 'text-muted-foreground/60'}`}>
                     {count}
                   </span>
                 )}
@@ -53,11 +53,11 @@ export function RoleFilterTabs({ active, roleCounts, onChange, showClearAll, onC
         {/* Clear All button */}
         {showClearAll && (
           <>
-            <div className="w-px h-5 bg-border shrink-0 mx-2" />
+            <div className="w-px h-4 sm:h-5 bg-border shrink-0 mx-1 sm:mx-2" />
             <button
               type="button"
               onClick={onClearAll}
-              className="px-4 py-3 text-sm font-medium text-destructive hover:text-destructive/80 transition-colors cursor-pointer whitespace-nowrap"
+              className="px-2 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-destructive hover:text-destructive/80 transition-colors cursor-pointer whitespace-nowrap"
             >
               Clear
             </button>
