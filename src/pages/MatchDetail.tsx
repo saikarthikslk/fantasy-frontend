@@ -33,6 +33,7 @@ import {
   ChevronsRight,
   ChevronRight,
   Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import {
   Tooltip,
@@ -558,12 +559,13 @@ export function MatchDetail() {
 
   // ── Queries ──
   const { data: allMatches = [], isLoading: loading, error: matchesError } = useMatches();
-  const { data: matchData } = useMatch(matchId);
-  const { data: scRaw, isLoading: scLoading, error: scQueryError } = useScorecard(matchId);
-  const { data: lbRows = [], isLoading: lbLoading, error: lbQueryError } = useMatchLeaderboard(matchId);
+  const { data: matchData, isFetching: matchFetching } = useMatch(matchId);
+  const { data: scRaw, isLoading: scLoading, isFetching: scFetching, error: scQueryError } = useScorecard(matchId);
+  const { data: lbRows = [], isLoading: lbLoading, isFetching: lbFetching, error: lbQueryError } = useMatchLeaderboard(matchId);
   const refreshData = useRefreshMatchData(matchId);
   const refreshRef = useRef(refreshData);
   refreshRef.current = refreshData;
+  const isRefreshing = matchFetching || scFetching || lbFetching;
 
   const error = matchesError ? (matchesError instanceof Error ? matchesError.message : "Failed to load") : null;
   const scError = scQueryError ? (scQueryError instanceof Error ? scQueryError.message : "Failed to load scorecard") : null;
@@ -737,7 +739,7 @@ export function MatchDetail() {
   }
 
   return (
-    <div className="container pt-8">
+    <div className="container pt-8 pb-20">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link to={backUrl} className="hover:text-foreground transition-colors flex items-center gap-1 hover:no-underline">
@@ -999,10 +1001,10 @@ export function MatchDetail() {
             setQuery("");
             tabsRef.current?.scrollIntoView({ behavior: "instant", block: "start" });
           }}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
-              <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-              <TabsTrigger value="playerstats">Player Stats</TabsTrigger>
+            <TabsList className="mb-4 w-full sm:w-auto">
+              <TabsTrigger value="scorecard" className="flex-1 sm:flex-initial">Scorecard</TabsTrigger>
+              <TabsTrigger value="leaderboard" className="flex-1 sm:flex-initial">Leaderboard</TabsTrigger>
+              <TabsTrigger value="playerstats" className="flex-1 sm:flex-initial">Player Stats</TabsTrigger>
             </TabsList>
 
             {/* Scorecard */}
@@ -1268,6 +1270,19 @@ export function MatchDetail() {
               />
             </TabsContent>
           </Tabs>
+
+          {/* Floating refresh — always visible while scrolling tab content */}
+          <button
+            type="button"
+            onClick={() => refreshData()}
+            disabled={isRefreshing}
+            aria-label="Refresh match data"
+            className="fixed right-4 sm:right-6 z-40 inline-flex items-center gap-2 h-11 pl-3.5 pr-4 rounded-full bg-secondary/40 backdrop-blur-md text-secondary-foreground/90 border border-border/50 shadow-lg shadow-black/30 hover:bg-secondary hover:border-border hover:text-secondary-foreground transition-all active:scale-95 disabled:bg-secondary disabled:border-border disabled:text-secondary-foreground disabled:pointer-events-none cursor-pointer"
+            style={{ bottom: "max(1.5rem, env(safe-area-inset-bottom, 1.5rem))" }}
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+            <span className="text-sm font-medium">{isRefreshing ? "Refreshing…" : "Refresh"}</span>
+          </button>
         </>
       )}
     </div>
