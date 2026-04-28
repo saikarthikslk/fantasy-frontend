@@ -1,16 +1,17 @@
 // @ts-nocheck
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { apiUrl, getToken, playerImageUrl } from "../api/client";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, Sparkles } from "lucide-react";
+import { AlertCircle, Sparkles, LayoutGrid, List } from "lucide-react";
 import {
   Tooltip,
-  TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { PitchView } from "@/components/PitchView";
+import { ViewToggle } from "@/components/ui/view-toggle";
 
 const ROLE_ORDER = ["WK", "BAT", "AR", "BOWL"];
 const ROLE_LABELS = { WK: "Wicket Keeper", BAT: "Batsmen", AR: "All Rounders", BOWL: "Bowlers" };
@@ -125,37 +126,63 @@ function RoleGroup({ role, players }) {
   );
 }
 
-export default function TeamPreview({ matchId, dreamId, lbEntry = null, teamNames = {} }: { matchId: number; dreamId: number; lbEntry?: any; teamNames?: Record<string, string> }) {
+interface TeamPreviewProps {
+  matchId: number;
+  dreamId: number;
+  lbEntry?: unknown;
+  teamNames?: Record<string, string>;
+  rank?: number | null;
+  totalPlayers?: number | null;
+}
+
+export default function TeamPreview({ matchId, dreamId, lbEntry = null, teamNames = {}, rank = null, totalPlayers = null }: TeamPreviewProps) {
   const [data, setData] = useState(lbEntry);
   const [loading, setLoading] = useState(!lbEntry);
   const [error, setError] = useState(null);
+  const [showPitchView, setShowPitchView] = useState(true);
+
+  // Track previous lbEntry to detect changes without triggering cascading renders
+  const prevLbEntryRef = useRef(lbEntry);
 
   useEffect(() => {
-    if (lbEntry) {
-      setData(lbEntry);
-      setLoading(false);
-      setError(null);
+    // If lbEntry changed, schedule state update
+    if (lbEntry && lbEntry !== prevLbEntryRef.current) {
+      prevLbEntryRef.current = lbEntry;
+      // Use requestAnimationFrame to batch state updates and avoid cascading renders
+      requestAnimationFrame(() => {
+        setData(lbEntry);
+        setLoading(false);
+        setError(null);
+      });
       return;
     }
-    const token = getToken();
-    setLoading(true);
-    setError(null);
-    fetch(apiUrl(`dream/${matchId}/${dreamId}`), {
-      method: "GET",
-      headers: { key: token, "Content-Type": "application/json" },
-    })
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then((d) => {
+
+    // Only fetch if no lbEntry is provided
+    if (lbEntry) {
+      return;
+    }
+
+    // Use async function to avoid setState warning for async operations
+    const fetchData = async () => {
+      const token = getToken();
+      try {
+        const response = await fetch(apiUrl(`dream/${matchId}/${dreamId}`), {
+          method: "GET",
+          headers: { key: token, "Content-Type": "application/json" },
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const d = await response.json();
         setData(d);
         setLoading(false);
-      })
-      .catch((e) => {
+      } catch (e) {
         setError(e.message);
         setLoading(false);
-      });
+      }
+    };
+
+    setLoading(true);
+    setError(null);
+    fetchData();
   }, [matchId, dreamId, lbEntry]);
 
   if (loading) {
@@ -231,75 +258,99 @@ export default function TeamPreview({ matchId, dreamId, lbEntry = null, teamName
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-6 pb-4 pt-5 shrink-0" data-drag-zone="true">
-        <div className="flex items-center gap-2 mb-3">
-          <p className="text-[11px] text-muted-foreground tracking-wide uppercase">
-            Squad · {playerEntities.length} players
-          </p>
-          {data.isauto && (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
-                    <Sparkles className="h-2.5 w-2.5" />
-                    Smart XI
-                  </span>
-                </TooltipTrigger>
-              </Tooltip>
-            </TooltipProvider>
+      <div className={`p-6 pt-5 shrink-0 ${showPitchView ? 'pb-[4px]' : 'pb-4'}`} data-drag-zone="true">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <p className="text-[11px] text-muted-foreground tracking-wide uppercase">
+              Squad · {playerEntities.length} players
+            </p>
+            {data.isauto && (
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
+                      <Sparkles className="h-2.5 w-2.5" />
+                      Smart XI
+                    </span>
+                  </TooltipTrigger>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+          {rank != null && totalPlayers != null && (
+            <p className="text-[11px] text-muted-foreground tracking-wide uppercase">
+              {rank}/{totalPlayers}
+            </p>
           )}
         </div>
 
-        {/* Points badge */}
-        <div className="flex items-baseline gap-2 mb-4">
-          <span className="text-3xl font-bold tabular-nums text-foreground leading-none">
-            {totalPoints.toFixed(1)}
-          </span>
-          <span className="text-sm text-muted-foreground">pts</span>
+        {/* Points badge & Pitch View toggle */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold tabular-nums text-foreground leading-none">
+              {totalPoints.toFixed(1)}
+            </span>
+            <span className="text-sm text-muted-foreground">pts</span>
+          </div>
+
+          <ViewToggle
+            isActive={showPitchView}
+            onToggle={() => setShowPitchView(!showPitchView)}
+            leftIcon={LayoutGrid}
+            rightIcon={List}
+          />
         </div>
 
-        {/* Captain / VC chips */}
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { label: "C", player: cap, accent: "gold", mult: "2x" },
-            { label: "VC", player: vc, accent: "primary", mult: "1.5x" },
-          ].map(({ label, player, accent, mult }) => (
-            <div
-              key={label}
-              className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 ${
-                accent === "gold"
-                  ? "bg-gold/5 border-gold/20"
-                  : "bg-primary/5 border-primary/20"
-              }`}
-            >
+        {/* Captain / VC chips - only show in list view */}
+        {!showPitchView && (
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { label: "C", player: cap, accent: "gold", mult: "2x" },
+              { label: "VC", player: vc, accent: "primary", mult: "1.5x" },
+            ].map(({ label, player, accent, mult }) => (
               <div
-                className={`h-6 w-6 rounded-full text-[10px] font-extrabold flex items-center justify-center shrink-0 ${
-                  accent === "gold" ? "bg-gold text-black" : "bg-primary text-primary-foreground"
+                key={label}
+                className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 ${
+                  accent === "gold"
+                    ? "bg-gold/5 border-gold/20"
+                    : "bg-primary/5 border-primary/20"
                 }`}
               >
-                {label}
+                <div
+                  className={`h-6 w-6 rounded-full text-[10px] font-extrabold flex items-center justify-center shrink-0 ${
+                    accent === "gold" ? "bg-gold text-black" : "bg-primary text-primary-foreground"
+                  }`}
+                >
+                  {label}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {player?.name ?? "—"}
+                  </p>
+                  <p className={`text-[10px] ${accent === "gold" ? "text-gold/60" : "text-primary/60"}`}>
+                    {mult} points
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {player?.name ?? "—"}
-                </p>
-                <p className={`text-[10px] ${accent === "gold" ? "text-gold/60" : "text-primary/60"}`}>
-                  {mult} points
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <Separator className="shrink-0" />
 
-      {/* Player list */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-6 pt-4 space-y-5">
-        {ROLE_ORDER.map((role) => (
-          <RoleGroup key={role} role={role} players={groups[role]} />
-        ))}
-      </div>
+      {/* Player list or Pitch view */}
+      {showPitchView ? (
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <PitchView groups={groups} rank={rank} />
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 overflow-y-auto p-6 pt-4 space-y-5">
+          {ROLE_ORDER.map((role) => (
+            <RoleGroup key={role} role={role} players={groups[role]} />
+          ))}
+        </div>
+      )}
 
       {/* Footer */}
       <div className="border-t px-6 py-3 shrink-0 space-y-1.5">

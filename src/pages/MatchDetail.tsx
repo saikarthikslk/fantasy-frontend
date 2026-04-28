@@ -800,7 +800,14 @@ export function MatchDetail() {
             )}
             <div className="flex-1 min-h-0 overflow-hidden">
               {sheetDid != null && sheetTab === "squad" && (
-                <TeamPreview matchId={matchId} dreamId={sheetDid} lbEntry={sheetLbEntry} teamNames={teamNames} />
+                <TeamPreview
+                  matchId={matchId}
+                  dreamId={sheetDid}
+                  lbEntry={sheetLbEntry}
+                  teamNames={teamNames}
+                  rank={sheetLbRank || null}
+                  totalPlayers={lbRows.length || null}
+                />
               )}
               {sheetTab === "compare" && canShowCompare && (
                 <TeamComparison
@@ -838,7 +845,7 @@ export function MatchDetail() {
             }}
           >
             {/* Drag handle */}
-            <div className="absolute top-0 inset-x-0 z-20 flex justify-center py-6 rounded-t-3xl backdrop-blur-md" style={{ touchAction: "none" }}>
+            <div className="absolute top-0 inset-x-0 z-20 flex justify-center py-3 rounded-t-3xl backdrop-blur-md" style={{ touchAction: "none" }}>
               <div className="w-10 h-1 rounded-full bg-muted-foreground/40" />
             </div>
 
@@ -861,7 +868,14 @@ export function MatchDetail() {
             {/* Scrollable content */}
             <div ref={sheetScrollRef} className="overflow-y-auto flex-1 min-h-0 pt-2" style={{ overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
               {sheetDid != null && sheetTab === "squad" && (
-                <TeamPreview matchId={matchId} dreamId={sheetDid} lbEntry={sheetLbEntry} teamNames={teamNames} />
+                <TeamPreview
+                  matchId={matchId}
+                  dreamId={sheetDid}
+                  lbEntry={sheetLbEntry}
+                  teamNames={teamNames}
+                  rank={sheetLbRank || null}
+                  totalPlayers={lbRows.length || null}
+                />
               )}
               {sheetTab === "compare" && canShowCompare && (
                 <TeamComparison
