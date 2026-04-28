@@ -70,9 +70,9 @@ export function Step2CaptainPicker({
       )}
 
       {/* Instruction */}
-      <div className="shrink-0 px-4 pt-4 pb-2">
+      <div className="shrink-0 px-4 pt-2 pb-2">
         <p className="text-[10px] text-muted-foreground text-center">
-          Assign Captain (2x) and Vice-Captain (1.5x) for your squad.
+          Assign Captain (2x) and Vice-Captain (1.5x) for your squad
         </p>
       </div>
 

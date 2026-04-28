@@ -178,7 +178,7 @@ export function PlayerPool({
         if (list.length === 0) return null
         return (
           <section key={role} className="space-y-3">
-            <header className="flex items-baseline gap-2">
+            <header className="flex items-baseline gap-2 px-3">
               <h3 className="text-sm font-semibold tracking-tight">{ROLE_NAME[role]}</h3>
               <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                 {roleLabel(role)}
