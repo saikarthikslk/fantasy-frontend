@@ -319,12 +319,13 @@ export function Leaderboard() {
           {/* Podium */}
           {topThree.length >= 3 && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8 max-w-2xl mx-auto">
-              {[topThree[1], topThree[0], topThree[2]].map((entry, vi) => {
-                const actualRank = vi === 0 ? 2 : vi === 1 ? 1 : 3
+              {topThree.map((entry, ri) => {
+                const actualRank = ri + 1
+                const orderClass = actualRank === 1 ? 'order-1 sm:order-2' : actualRank === 2 ? 'order-2 sm:order-1' : 'order-3 sm:order-3'
                 const avatarUrl = base64ToBlobUrl(entry.imageurl)
                 const ringColor = actualRank === 1 ? 'ring-gold' : actualRank === 2 ? 'ring-silver' : 'ring-bronze'
                 return (
-                  <Card key={entry.email} className={`text-center ${actualRank === 1 ? 'sm:-mt-4 border-gold/30' : actualRank === 3 ? 'sm:mt-4' : ''}`}>
+                  <Card key={entry.email} className={`text-center ${orderClass} ${actualRank === 1 ? 'sm:-mt-4 border-gold/30' : actualRank === 3 ? 'sm:mt-4' : ''}`}>
                     <CardContent className="pt-6 pb-4">
                       <div className="text-2xl mb-2">
                         {actualRank === 1 ? '🥇' : actualRank === 2 ? '🥈' : '🥉'}

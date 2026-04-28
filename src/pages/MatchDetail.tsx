@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { ApiMatch, ApiPlayer, ScorecardInnings } from "../types/api";
 import TeamPreview from "./TeamPreview";
 import TeamComparison from "./TeamComparison";
 import PlayerStatsTab from "./PlayerStatsTab";
 import { apiUrl } from "../api/client";
+import { getMatchBucket } from "../fantasy/matchBucket";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
   useMatches,
@@ -592,6 +593,7 @@ export function MatchDetail() {
     [allMatches, matchId],
   );
   const teamCreationLocked = match != null && (match.state === "In Progress" || match.state === "Live");
+  const matchStarted = teamCreationLocked || match?.state === "Completed";
   useEffect(() => {
     if (!teamCreationLocked) return;
     const es = new EventSource(apiUrl("/api/stream/notif/" + matchId));
@@ -680,7 +682,15 @@ export function MatchDetail() {
     })();
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { isDisabled: off } = useKeyboard();
+
+  const backUrl = useMemo(() => {
+    const fromQs = (location.state as { fromMatchesQs?: string } | null)?.fromMatchesQs;
+    if (typeof fromQs === "string") return fromQs ? `/matches?${fromQs}` : "/matches";
+    if (match && getMatchBucket(match) === "completed") return "/matches?view=completed";
+    return "/matches";
+  }, [location.state, match]);
 
   usePageShortcuts("match-detail", (e: KeyboardEvent) => {
     if (e.key === "1" && !off("md-tab-1")) { setTab("scorecard"); setPage(1); setQuery(""); return true; }
@@ -720,7 +730,7 @@ export function MatchDetail() {
       <div className="container pt-8">
         <p className="text-muted-foreground">Invalid match.</p>
         <Button asChild variant="outline" className="mt-4">
-          <Link to="/matches">Back to matches</Link>
+          <Link to={backUrl}>Back to matches</Link>
         </Button>
       </div>
     );
@@ -730,7 +740,7 @@ export function MatchDetail() {
     <div className="container pt-8">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link to="/matches" className="hover:text-foreground transition-colors flex items-center gap-1 hover:no-underline">
+        <Link to={backUrl} className="hover:text-foreground transition-colors flex items-center gap-1 hover:no-underline">
           <ChevronLeft className="h-4 w-4" />
           Matches
         </Link>
@@ -771,7 +781,7 @@ export function MatchDetail() {
         <div className="flex flex-col items-center py-20">
           <p className="text-muted-foreground mb-4">Match not found</p>
           <Button asChild>
-            <Link to="/matches">Back to matches</Link>
+            <Link to={backUrl}>Back to matches</Link>
           </Button>
         </div>
       )}
@@ -805,8 +815,8 @@ export function MatchDetail() {
                   dreamId={sheetDid}
                   lbEntry={sheetLbEntry}
                   teamNames={teamNames}
-                  rank={sheetLbRank || null}
-                  totalPlayers={lbRows.length || null}
+                  rank={matchStarted ? (sheetLbRank || null) : null}
+                  totalPlayers={matchStarted ? (lbRows.length || null) : null}
                 />
               )}
               {sheetTab === "compare" && canShowCompare && (
@@ -873,8 +883,8 @@ export function MatchDetail() {
                   dreamId={sheetDid}
                   lbEntry={sheetLbEntry}
                   teamNames={teamNames}
-                  rank={sheetLbRank || null}
-                  totalPlayers={lbRows.length || null}
+                  rank={matchStarted ? (sheetLbRank || null) : null}
+                  totalPlayers={matchStarted ? (lbRows.length || null) : null}
                 />
               )}
               {sheetTab === "compare" && canShowCompare && (
@@ -915,9 +925,9 @@ export function MatchDetail() {
                     )}
                   </div>
                   <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-                    <span style={{ color: getTeamColors(t1).ink }}>{t1}</span>
+                    <span>{t1}</span>
                     <span className="text-muted-foreground font-normal"> vs </span>
-                    <span style={{ color: getTeamColors(t2).ink }}>{t2}</span>
+                    <span>{t2}</span>
                   </h1>
                   <Badge variant={match.state === "Completed" ? "secondary" : "emerald"}
                     className="mt-2 py-2">

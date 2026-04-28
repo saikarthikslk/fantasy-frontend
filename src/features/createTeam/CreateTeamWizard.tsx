@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/dialog'
 import { Loader2, AlertCircle, Check, X, ChevronLeft, Sparkles } from 'lucide-react'
 import { Kbd } from '@/components/ui/kbd'
+import { cn } from '@/lib/utils'
 
 // Hoisted for useSyncExternalStore (must be stable references)
 const MOBILE_MQ = '(max-width: 1023px)'
@@ -541,11 +542,16 @@ function DesktopCreateTeam({
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <p className="text-sm font-medium truncate">{p.name}</p>
-            {isSmartXI && <Sparkles className="h-3.5 w-3.5 shrink-0 fill-gold text-gold" />}
+          <p className="text-sm font-medium truncate">{p.name}</p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-[11px] text-muted-foreground">{role}</span>
+            {isSmartXI && (
+              <span className="inline-flex items-center gap-0.5 rounded-md border border-gold/40 bg-gold/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-gold">
+                <Sparkles className="h-2.5 w-2.5 fill-gold" />
+                Smart XI
+              </span>
+            )}
           </div>
-          <p className="text-[11px] text-muted-foreground">{role}</p>
         </div>
         <span className="text-sm font-semibold tabular-nums shrink-0 text-muted-foreground">{cr.toFixed(1)}</span>
         {on && <Check className="h-4 w-4 shrink-0" style={{ color: checkColor }} />}
