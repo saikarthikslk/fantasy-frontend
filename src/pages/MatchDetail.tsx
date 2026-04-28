@@ -178,7 +178,7 @@ function colorizeTeamNames(text: string, match: ApiMatch | null) {
     .flatMap((b) => b.names)
     .sort((a, b) => b.length - a.length);
   if (allNames.length === 0) return text;
-  const regex = new RegExp(`(${allNames.map(escapeRegex).join("|")})`, "g");
+  const regex = new RegExp(`\\b(${allNames.map(escapeRegex).join("|")})\\b`, "g");
   const parts = text.split(regex);
   return parts.map((part, i) => {
     const bucket = buckets.find((b) => b.names.includes(part));

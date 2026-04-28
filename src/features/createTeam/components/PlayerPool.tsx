@@ -87,7 +87,7 @@ function CategoryBlock({
           </span>
         </div>
         {/* Player cards */}
-        <div className="pt-2 pb-2 px-3 md:px-5 space-y-1">
+        <div className={`pt-2 pb-2 px-3 md:px-5 grid gap-1.5 ${gridClass}`}>
           {list.map(renderCard)}
         </div>
       </div>

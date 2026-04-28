@@ -7,7 +7,7 @@ export function CreateTeamPage() {
   const matchId = Number(matchIdParam)
 
   return (
-    <div className="h-[calc(100dvh-3.5rem)] flex flex-col overflow-hidden">
+    <div className="h-[calc(100dvh-3.5rem)] flex flex-col overflow-hidden lg:px-8 xl:px-16 2xl:px-32">
       <CreateTeam
         matchId={matchId}
         action={(action as 'new' | 'edit') ?? 'new'}
