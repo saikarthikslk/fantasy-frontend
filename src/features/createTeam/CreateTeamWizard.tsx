@@ -651,9 +651,9 @@ function DesktopCreateTeam({
         <div className="flex-1 min-h-0 min-w-[720px] flex flex-col overflow-hidden">
           {/* Role filter */}
           <div className="shrink-0 border-b overflow-x-auto">
-            <div className="flex items-center min-w-fit">
+            <div className="flex items-center">
               {/* Role tabs with underline indicator */}
-              <div className="flex flex-1">
+              <div className="flex flex-1 min-w-0">
                 {roleTabs.map((tab) => {
                   const isActive = roleFilter === tab
                   const count = tab === 'ALL' ? null : roleCounts[tab]
@@ -662,13 +662,13 @@ function DesktopCreateTeam({
                       key={tab}
                       type="button"
                       onClick={() => setRoleFilter(tab)}
-                      className="relative flex-1 flex items-center justify-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
+                      className="relative flex-1 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
                     >
                       <span className={isActive ? 'text-foreground' : 'text-muted-foreground'}>
                         {tab === 'ALL' ? 'All' : roleLabel(tab)}
                       </span>
                       {count != null && count > 0 && (
-                        <span className={`text-[10px] tabular-nums ${isActive ? 'text-foreground/60' : 'text-muted-foreground/60'}`}>
+                        <span className={`text-[9px] sm:text-[10px] tabular-nums ${isActive ? 'text-foreground/60' : 'text-muted-foreground/60'}`}>
                           {count}
                         </span>
                       )}
@@ -684,11 +684,11 @@ function DesktopCreateTeam({
               {/* Clear All button */}
               {selectedList.length > 0 && (
                 <>
-                  <div className="w-px h-5 bg-border shrink-0 mx-2" />
+                  <div className="w-px h-4 sm:h-5 bg-border shrink-0 mx-1 sm:mx-2" />
                   <button
                     type="button"
                     onClick={() => clearAll()}
-                    className="px-4 py-3 text-sm font-medium text-destructive hover:text-destructive/80 transition-colors cursor-pointer whitespace-nowrap"
+                    className="px-2 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-destructive hover:text-destructive/80 transition-colors cursor-pointer whitespace-nowrap"
                   >
                     Clear
                   </button>
