@@ -34,13 +34,14 @@ interface Step1Props {
   viceCaptainId: string | null
   apiError: string | null
   isAnnounced: boolean
+  smartXIIds?: Set<string>
 }
 
 export function Step1PlayerPicker({
   players, matchMeta, byId, selected, selectedList, roleCounts,
   creditsLeft, hint, squadValid, validationErrors,
   onPick, onClearAll, onNext, onSmartXI, smartXILoading,
-  apiError, isAnnounced,
+  apiError, isAnnounced, smartXIIds = new Set(),
 }: Step1Props) {
   const [roleFilter, setRoleFilter] = useState<'ALL' | FantasyRole>('WK')
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -58,6 +59,7 @@ export function Step1PlayerPicker({
     const on = selected.has(pk)
     const res = on ? ({ ok: true } as const) : tryAddPlayer(p, selected, byId, matchMeta)
     const disabled = !on && !res.ok
+    const isSmartXI = smartXIIds.has(String(p.id))
     return (
       <PlayerPoolCard
         key={pk}
@@ -65,6 +67,7 @@ export function Step1PlayerPicker({
         isSelected={on}
         isDisabled={disabled}
         onClick={() => onPick(p)}
+        isSmartXI={isSmartXI}
       />
     )
   }

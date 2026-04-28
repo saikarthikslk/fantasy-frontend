@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react'
+import { Check, Star } from 'lucide-react'
 import { playerImageUrl } from '@/api/client'
 import { creditsForPlayer, normalizeRole } from '@/fantasy/dream11Rules'
 import { getTeamChipStyles, getTeamSelectedStyles, getTeamCheckColor } from '@/fantasy/teamColors'
@@ -9,9 +9,10 @@ interface PlayerPoolCardProps {
   isSelected: boolean
   isDisabled: boolean
   onClick: () => void
+  isSmartXI?: boolean
 }
 
-export function PlayerPoolCard({ player, isSelected, isDisabled, onClick }: PlayerPoolCardProps) {
+export function PlayerPoolCard({ player, isSelected, isDisabled, onClick, isSmartXI = false }: PlayerPoolCardProps) {
   const cr = creditsForPlayer(player)
   const role = normalizeRole(player.type)
   const teamShortName = player.team?.teamSName || player.team?.teamName || ''
@@ -55,7 +56,10 @@ export function PlayerPoolCard({ player, isSelected, isDisabled, onClick }: Play
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{player.name}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-medium truncate">{player.name}</p>
+          {isSmartXI && <Star className="h-3.5 w-3.5 shrink-0 fill-gold text-gold" />}
+        </div>
         <p className="text-[11px] text-muted-foreground">{role}</p>
       </div>
       <span className="text-sm font-semibold tabular-nums shrink-0 text-muted-foreground">{cr.toFixed(1)}</span>

@@ -153,6 +153,17 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
 
   const smartTeam = matchSelection?.smartTeam ?? null
 
+  // Create set of Smart XI player IDs for indication
+  const smartXIIds = useMemo(() => {
+    const ids = new Set<string>()
+    if (smartTeam?.players && Array.isArray(smartTeam.players)) {
+      for (const p of smartTeam.players as ApiPlayer[]) {
+        if (p?.id != null) ids.add(String(p.id))
+      }
+    }
+    return ids
+  }, [smartTeam])
+
   const handleSmartXI = useCallback(() => {
     if (!smartTeam?.players?.length) return
 
@@ -308,6 +319,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
                 viceCaptainId={draft.viceCaptainId}
                 apiError={apiError}
                 isAnnounced={isAnnounced}
+                smartXIIds={smartXIIds}
               />
             </div>
             <div className="w-1/2 h-full flex flex-col overflow-hidden">
@@ -335,6 +347,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
                 canSave={draft.canSave}
                 saving={saving}
                 success={success}
+                smartXIIds={smartXIIds}
               />
             </div>
           </div>
@@ -377,6 +390,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
     smartXIPicked={smartXIPicked}
     onDismissSmartHint={() => setSmartXIPicked(false)}
     isAnnounced={isAnnounced}
+    smartXIIds={smartXIIds}
   /></>
 }
 
@@ -401,12 +415,14 @@ interface DesktopProps {
   smartXIPicked: boolean
   onDismissSmartHint: () => void
   isAnnounced: boolean
+  smartXIIds: Set<string>
 }
 
 function DesktopCreateTeam({
   action, onClose, draft, players, matchMeta,
   t1, t2, apiError, saving, success, onSubmit,
   onSmartXI, smartXILoading, smartXIPicked, onDismissSmartHint, isAnnounced,
+  smartXIIds,
 }: DesktopProps) {
   const [roleFilter, setRoleFilter] = useState<'ALL' | FantasyRole>('WK')
   const [rightWidth, setRightWidth] = useState(360)
@@ -493,6 +509,7 @@ function DesktopCreateTeam({
     const res = on ? ({ ok: true } as const) : tryAddPlayer(p, selected, byId, matchMeta)
     const disabled = !on && !res.ok
     const teamShortName = p.team?.teamSName || p.team?.teamName || ''
+    const isSmartXI = smartXIIds.has(String(p.id))
 
     // Get team brand colors
     const chipStyles = getTeamChipStyles(p.team?.teamSName)
@@ -524,7 +541,10 @@ function DesktopCreateTeam({
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{p.name}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-medium truncate">{p.name}</p>
+            {isSmartXI && <Sparkles className="h-3.5 w-3.5 shrink-0 fill-gold text-gold" />}
+          </div>
           <p className="text-[11px] text-muted-foreground">{role}</p>
         </div>
         <span className="text-sm font-semibold tabular-nums shrink-0 text-muted-foreground">{cr.toFixed(1)}</span>
@@ -739,6 +759,7 @@ function DesktopCreateTeam({
               const pk = playerKey(p)
               const isCap = captainId === pk
               const isVc = viceCaptainId === pk
+              const isSmartXI = smartXIIds.has(String(p.id))
               return (
                 <div key={pk} className="flex items-center gap-3 px-4 py-2.5 lg:py-0 lg:px-3 border-b border-border/8 last:border-0 group/row hover:bg-muted/30 transition-colors">
                   <div className="relative shrink-0">
@@ -753,7 +774,10 @@ function DesktopCreateTeam({
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="text-[13px] font-medium truncate block">{p.name}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[13px] font-medium truncate">{p.name}</span>
+                      {isSmartXI && <Sparkles className="h-3 w-3 shrink-0 fill-gold text-gold" />}
+                    </div>
                     <span className="text-[10px] text-muted-foreground">{p.team?.teamSName ?? p.team?.teamName ?? ''} · {role}</span>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">

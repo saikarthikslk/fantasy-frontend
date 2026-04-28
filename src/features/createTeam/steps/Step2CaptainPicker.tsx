@@ -24,12 +24,14 @@ interface Step2Props {
   canSave: boolean
   saving: boolean
   success: boolean
+  smartXIIds?: Set<string>
 }
 
 export function Step2CaptainPicker({
   selectedList, captainId, viceCaptainId, captainViceErrors,
   smartXIPicked, onDismissSmartHint,
   onSelectCaptain, onSelectViceCaptain, onRemove, onSave, canSave, saving, success,
+  smartXIIds = new Set(),
 }: Step2Props) {
   const [removing, setRemoving] = useState<string | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -84,6 +86,7 @@ export function Step2CaptainPicker({
           const isVc = viceCaptainId === pk
           const role = normalizeRole(p.type)
           const isRemoving = removing === pk
+          const isSmartXI = smartXIIds.has(String(p.id))
 
           return (
             <div
@@ -140,7 +143,10 @@ export function Step2CaptainPicker({
 
                 {/* Name + role */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-semibold truncate">{p.name}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-[14px] font-semibold truncate">{p.name}</p>
+                    {isSmartXI && <Sparkles className="h-3.5 w-3.5 shrink-0 fill-gold text-gold" />}
+                  </div>
                   <p className="text-xs text-muted-foreground mt-0.5">{role} · {p.team?.teamSName ?? p.team?.teamName ?? ''}</p>
                 </div>
 
