@@ -119,10 +119,11 @@ export function useCreateTeam(matchId: number) {
 
 // ── Helpers ─────────────────────────────────────────────
 
-/** Imperatively refetch scorecard + leaderboard (for SSE refresh events). */
+/** Imperatively refetch match + scorecard + leaderboard (covers scorecard, leaderboard, player stats). */
 export function useRefreshMatchData(matchId: number) {
   const qc = useQueryClient()
   return () => {
+    qc.invalidateQueries({ queryKey: queryKeys.match(matchId) })
     qc.invalidateQueries({ queryKey: queryKeys.scorecard(matchId) })
     qc.invalidateQueries({ queryKey: queryKeys.matchLeaderboard(matchId) })
   }
