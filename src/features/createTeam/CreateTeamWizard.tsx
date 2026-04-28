@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/dialog'
 import { Loader2, AlertCircle, Check, X, ChevronLeft, Sparkles } from 'lucide-react'
 import { Kbd } from '@/components/ui/kbd'
+import { cn } from '@/lib/utils'
 
 // Hoisted for useSyncExternalStore (must be stable references)
 const MOBILE_MQ = '(max-width: 1023px)'
@@ -541,11 +542,16 @@ function DesktopCreateTeam({
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <p className="text-sm font-medium truncate">{p.name}</p>
-            {isSmartXI && <Sparkles className="h-3.5 w-3.5 shrink-0 fill-gold text-gold" />}
+          <p className="text-sm font-medium truncate">{p.name}</p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-[11px] text-muted-foreground">{role}</span>
+            {isSmartXI && (
+              <span className="inline-flex items-center gap-0.5 rounded-md border border-gold/40 bg-gold/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-gold">
+                <Sparkles className="h-2.5 w-2.5 fill-gold" />
+                Smart XI
+              </span>
+            )}
           </div>
-          <p className="text-[11px] text-muted-foreground">{role}</p>
         </div>
         <span className="text-sm font-semibold tabular-nums shrink-0 text-muted-foreground">{cr.toFixed(1)}</span>
         {on && <Check className="h-4 w-4 shrink-0" style={{ color: checkColor }} />}
@@ -650,10 +656,10 @@ function DesktopCreateTeam({
         {/* Player pool */}
         <div className="flex-1 min-h-0 min-w-[720px] flex flex-col overflow-hidden">
           {/* Role filter */}
-          <div className="shrink-0 border-b overflow-x-auto">
-            <div className="flex items-center">
+          <div className="shrink-0 border-b">
+            <div className="flex items-center px-5 sm:px-8 overflow-x-auto">
               {/* Role tabs with underline indicator */}
-              <div className="flex flex-1 min-w-0">
+              <div className="flex items-center">
                 {roleTabs.map((tab) => {
                   const isActive = roleFilter === tab
                   const count = tab === 'ALL' ? null : roleCounts[tab]
@@ -662,19 +668,19 @@ function DesktopCreateTeam({
                       key={tab}
                       type="button"
                       onClick={() => setRoleFilter(tab)}
-                      className="relative flex-1 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
+                      className="relative flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
                     >
-                      <span className={isActive ? 'text-foreground' : 'text-muted-foreground'}>
+                      <span className={isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80 transition-colors'}>
                         {tab === 'ALL' ? 'All' : roleLabel(tab)}
                       </span>
                       {count != null && count > 0 && (
-                        <span className={`text-[9px] sm:text-[10px] tabular-nums ${isActive ? 'text-foreground/60' : 'text-muted-foreground/60'}`}>
+                        <span className={`text-[10px] font-semibold tabular-nums px-1.5 py-px rounded ${isActive ? 'bg-foreground/10 text-foreground' : 'bg-muted/60 text-muted-foreground'}`}>
                           {count}
                         </span>
                       )}
                       {/* Active underline indicator */}
                       {isActive && (
-                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground" />
+                        <span className="absolute bottom-0 inset-x-3 h-0.5 bg-foreground rounded-full" />
                       )}
                     </button>
                   )
@@ -683,16 +689,13 @@ function DesktopCreateTeam({
 
               {/* Clear All button */}
               {selectedList.length > 0 && (
-                <>
-                  <div className="w-px h-4 sm:h-5 bg-border shrink-0 mx-1 sm:mx-2" />
-                  <button
-                    type="button"
-                    onClick={() => clearAll()}
-                    className="px-2 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-destructive hover:text-destructive/80 transition-colors cursor-pointer whitespace-nowrap"
-                  >
-                    Clear
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={() => clearAll()}
+                  className="ml-auto px-3 py-1.5 text-xs font-medium text-destructive/70 hover:text-destructive transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  Clear all
+                </button>
               )}
             </div>
           </div>
@@ -706,6 +709,7 @@ function DesktopCreateTeam({
                 isAnnounced={isAnnounced}
                 renderCard={renderPlayerTile}
                 useEdgeToEdgeBanners={true}
+                gridClass="grid-cols-1 xl:grid-cols-2"
               />
             </div>
           </div>
@@ -782,9 +786,9 @@ function DesktopCreateTeam({
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <button type="button" onClick={(e) => { e.stopPropagation(); selectCaptain(pk) }}
-                      className={`h-8 px-2.5 lg:h-7 lg:px-2 rounded-md text-[11px] lg:text-[10px] font-bold flex items-center justify-center cursor-pointer transition-all ${isCap ? 'bg-blue-500 text-white shadow-sm' : 'bg-muted text-muted-foreground hover:bg-blue-500/15 hover:text-blue-400'}`}>C</button>
+                      className={`h-8 px-2.5 lg:h-7 lg:px-2 rounded-md text-[11px] lg:text-[10px] font-bold flex items-center justify-center cursor-pointer transition-all ${isCap ? 'bg-blue-500 text-white shadow-sm' : 'text-muted-foreground/40 hover:bg-blue-500/15 hover:text-blue-400'}`}>C</button>
                     <button type="button" onClick={(e) => { e.stopPropagation(); selectViceCaptain(pk) }}
-                      className={`h-8 px-2 lg:h-7 lg:px-1.5 rounded-md text-[11px] lg:text-[10px] font-bold flex items-center justify-center cursor-pointer transition-all ${isVc ? 'bg-violet-500 text-white shadow-sm' : 'bg-muted text-muted-foreground hover:bg-violet-500/15 hover:text-violet-400'}`}>VC</button>
+                      className={`h-8 px-2 lg:h-7 lg:px-1.5 rounded-md text-[11px] lg:text-[10px] font-bold flex items-center justify-center cursor-pointer transition-all ${isVc ? 'bg-violet-500 text-white shadow-sm' : 'text-muted-foreground/40 hover:bg-violet-500/15 hover:text-violet-400'}`}>VC</button>
                     <button type="button" onClick={() => pickPlayer(p)}
                       className="h-8 w-8 lg:h-7 lg:w-7 rounded-md flex items-center justify-center text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 cursor-pointer opacity-0 group-hover/row:opacity-100 transition-opacity">
                       <X className="h-3.5 w-3.5" />

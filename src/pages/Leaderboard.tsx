@@ -128,16 +128,18 @@ const LeaderboardRow = memo(function LeaderboardRow({
   focused,
   registerClick,
   idx,
+  leader,
 }: {
   row: OverallLeaderboardEntry
   rank: number
   focused?: boolean
   registerClick?: (idx: number, fn: () => void) => void
   idx?: number
+  leader: OverallLeaderboardEntry | null
 }) {
   const [expanded, setExpanded] = useState(false)
   const avatarUrl = base64ToBlobUrl(row.imageurl)
-  const rowRef = useRef<HTMLTableRowElement>(null)
+  const rowRef = useRef<HTMLDivElement>(null)
 
   // Scroll into view when focused via keyboard
   useEffect(() => {
@@ -152,38 +154,49 @@ const LeaderboardRow = memo(function LeaderboardRow({
     if (registerClick && idx != null) registerClick(idx, toggle)
   }, [registerClick, idx, toggle])
 
+  const isLeader = leader != null && row.email === leader.email
+  const diff = leader != null && !isLeader ? row.totalpoints - leader.totalpoints : null
+
   return (
-    <tr ref={rowRef} className={`group ${expanded ? 'bg-muted/20' : ''} ${focused ? 'ring-2 ring-ring/60 ring-inset rounded-lg' : ''}`}>
-      <td colSpan={6} className="p-0">
-        <div
-          className="flex items-center gap-3 px-3 py-2.5 transition-colors cursor-pointer hover:bg-muted/30"
-          onClick={toggle}
-        >
-          <span className="w-8 shrink-0 text-center">
-            {rank <= 3 ? (
-              <span className="text-lg">{rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉'}</span>
-            ) : (
-              <span className="text-sm text-muted-foreground tabular-nums">{rank}</span>
-            )}
-          </span>
-          <Avatar className="h-8 w-8 shrink-0 hidden sm:flex">
-            {avatarUrl && <AvatarImage src={avatarUrl} />}
-            <AvatarFallback className="text-xs">{row.name?.charAt(0)?.toUpperCase() ?? '?'}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <span className="text-sm font-medium block truncate">{row.name}</span>
-            <span className="text-xs text-muted-foreground block truncate sm:hidden">{row.stats?.length ?? 0} played</span>
-            <span className="text-xs text-muted-foreground hidden sm:block truncate">{row.email}</span>
-          </div>
-          <Badge variant="secondary" className="shrink-0 hidden sm:inline-flex">{row.stats?.length ?? 0}</Badge>
-          <span className="text-sm font-semibold tabular-nums w-16 text-right shrink-0">{row.totalpoints.toFixed(1)}</span>
-          <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${expanded ? 'rotate-180' : ''}`} />
+    <div
+      ref={rowRef}
+      className={`group ${expanded ? 'bg-muted/20' : ''} ${focused ? 'ring-2 ring-ring/60 ring-inset rounded-lg' : ''}`}
+    >
+      <div
+        className="flex items-center gap-2 sm:gap-3 px-3 py-2.5 transition-colors cursor-pointer hover:bg-muted/30"
+        onClick={toggle}
+      >
+        <span className="w-7 sm:w-8 shrink-0 text-center">
+          {rank <= 3 ? (
+            <span className="text-lg">{rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉'}</span>
+          ) : (
+            <span className="text-sm text-muted-foreground tabular-nums">{rank}</span>
+          )}
+        </span>
+        <Avatar className="h-8 w-8 shrink-0 hidden sm:flex">
+          {avatarUrl && <AvatarImage src={avatarUrl} />}
+          <AvatarFallback className="text-xs">{row.name?.charAt(0)?.toUpperCase() ?? '?'}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <span className="text-sm font-medium block truncate">{row.name}</span>
+          <span className="text-xs text-muted-foreground block truncate sm:hidden">{row.stats?.length ?? 0} played</span>
+          <span className="text-xs text-muted-foreground hidden sm:block truncate">{row.email}</span>
         </div>
-        {expanded && row.stats && row.stats.length > 0 && (
-          <MatchStatsPopover stats={row.stats} />
-        )}
-      </td>
-    </tr>
+        <Badge variant="secondary" className="shrink-0 hidden sm:inline-flex">{row.stats?.length ?? 0}</Badge>
+        <div className="text-right shrink-0 min-w-0">
+          <span className="text-sm font-semibold tabular-nums block">{row.totalpoints.toFixed(1)}</span>
+          {diff != null && (
+            <span className="text-[10px] tabular-nums text-muted-foreground/60 block leading-tight">
+              {diff.toFixed(1)}
+            </span>
+          )}
+        </div>
+        <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${expanded ? 'rotate-180' : ''}`} />
+      </div>
+      {expanded && row.stats && row.stats.length > 0 && (
+        <MatchStatsPopover stats={row.stats} />
+      )}
+    </div>
   )
 })
 
@@ -254,6 +267,7 @@ export function Leaderboard() {
     const sorted = [...rows].sort((a, b) => b.totalpoints - a.totalpoints)
     return sorted.slice(0, 3)
   }, [rows])
+  const leader = topThree[0] ?? null
 
   return (
     <div className="container px-4 sm:px-8 py-6 sm:py-8">
@@ -319,12 +333,13 @@ export function Leaderboard() {
           {/* Podium */}
           {topThree.length >= 3 && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8 max-w-2xl mx-auto">
-              {[topThree[1], topThree[0], topThree[2]].map((entry, vi) => {
-                const actualRank = vi === 0 ? 2 : vi === 1 ? 1 : 3
+              {topThree.map((entry, ri) => {
+                const actualRank = ri + 1
+                const orderClass = actualRank === 1 ? 'order-1 sm:order-2' : actualRank === 2 ? 'order-2 sm:order-1' : 'order-3 sm:order-3'
                 const avatarUrl = base64ToBlobUrl(entry.imageurl)
                 const ringColor = actualRank === 1 ? 'ring-gold' : actualRank === 2 ? 'ring-silver' : 'ring-bronze'
                 return (
-                  <Card key={entry.email} className={`text-center ${actualRank === 1 ? 'sm:-mt-4 border-gold/30' : actualRank === 3 ? 'sm:mt-4' : ''}`}>
+                  <Card key={entry.email} className={`text-center ${orderClass} ${actualRank === 1 ? 'sm:-mt-4 border-gold/30' : actualRank === 3 ? 'sm:mt-4' : ''}`}>
                     <CardContent className="pt-6 pb-4">
                       <div className="text-2xl mb-2">
                         {actualRank === 1 ? '🥇' : actualRank === 2 ? '🥈' : '🥉'}
@@ -396,52 +411,45 @@ export function Leaderboard() {
             </Select>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="p-0">
-                    <div className="flex items-center gap-3 px-3 py-2.5 text-xs font-medium text-muted-foreground">
-                      <span className="w-8 shrink-0 text-center">#</span>
-                      <span className="w-8 shrink-0 hidden sm:block"></span>
-                      <button type="button" className="flex-1 text-left flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => onSort('name')}>
-                        Name
-                        {sortKey === 'name' && (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
-                      </button>
-                      <button type="button" className="shrink-0 hidden sm:flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => onSort('matches')}>
-                        Played
-                        {sortKey === 'matches' && (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
-                      </button>
-                      <button type="button" className="w-16 shrink-0 text-right flex items-center gap-1 justify-end hover:text-foreground cursor-pointer" onClick={() => onSort('totalpoints')}>
-                        Pts
-                        {sortKey === 'totalpoints' && (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
-                      </button>
-                      <span className="w-7 shrink-0"></span>
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {pageRows.map((row, i) => (
-                  <LeaderboardRow
-                    key={row.email}
-                    row={row}
-                    rank={start + i + 1}
-                    focused={i === focusedIdx}
-                    idx={i}
-                    registerClick={(idx, fn) => rowClickRefs.current.set(idx, fn)}
-                  />
-                ))}
-                {pageRows.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                      No results match your search
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          {/* List */}
+          <div className="rounded-lg border overflow-hidden">
+            <div className="border-b bg-muted/50">
+              <div className="flex items-center gap-2 sm:gap-3 px-3 py-2.5 text-xs font-medium text-muted-foreground">
+                <span className="w-7 sm:w-8 shrink-0 text-center">#</span>
+                <span className="w-8 shrink-0 hidden sm:block"></span>
+                <button type="button" className="flex-1 min-w-0 text-left flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => onSort('name')}>
+                  Name
+                  {sortKey === 'name' && (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
+                </button>
+                <button type="button" className="shrink-0 hidden sm:flex items-center gap-1 hover:text-foreground cursor-pointer" onClick={() => onSort('matches')}>
+                  Played
+                  {sortKey === 'matches' && (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
+                </button>
+                <button type="button" className="shrink-0 text-right flex items-center gap-1 justify-end hover:text-foreground cursor-pointer" onClick={() => onSort('totalpoints')}>
+                  Pts
+                  {sortKey === 'totalpoints' && (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
+                </button>
+                <span className="w-4 shrink-0"></span>
+              </div>
+            </div>
+            <div className="divide-y">
+              {pageRows.map((row, i) => (
+                <LeaderboardRow
+                  key={row.email}
+                  row={row}
+                  rank={start + i + 1}
+                  focused={i === focusedIdx}
+                  idx={i}
+                  leader={leader}
+                  registerClick={(idx, fn) => rowClickRefs.current.set(idx, fn)}
+                />
+              ))}
+              {pageRows.length === 0 && (
+                <div className="p-8 text-center text-muted-foreground">
+                  No results match your search
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Pagination — only show when more than one page */}

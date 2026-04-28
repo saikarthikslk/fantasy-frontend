@@ -67,14 +67,14 @@ function CompletedMatchInfo({ m }: { m: ApiMatch }) {
   )
 }
 
-function MatchCard({ m }: { m: ApiMatch }) {
+function MatchCard({ m, fromQs }: { m: ApiMatch; fromQs: string }) {
   const bucket = getMatchBucket(m)
   const isLive = bucket === 'live'
   const t1 = m.team1?.teamSName ?? m.team1?.teamName ?? '—'
   const t2 = m.team2?.teamSName ?? m.team2?.teamName ?? '—'
 
   return (
-    <Link to={`/matches/${m.matchId}`} className="group block hover:no-underline">
+    <Link to={`/matches/${m.matchId}`} state={{ fromMatchesQs: fromQs }} className="group block hover:no-underline">
       <div className={`relative rounded-xl border bg-card p-4 transition-all hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 h-full ${
         isLive ? 'border-emerald-500/40 ring-1 ring-emerald-500/20' : ''
       }`}>
@@ -269,7 +269,7 @@ export function Matches() {
           {pageRows.length > 0 && (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {pageRows.map((m) => (
-                <MatchCard key={m.matchId} m={m} />
+                <MatchCard key={m.matchId} m={m} fromQs={searchParams.toString()} />
               ))}
             </div>
           )}

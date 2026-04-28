@@ -262,7 +262,7 @@ export default function TeamPreview({ matchId, dreamId, lbEntry = null, teamName
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
             <p className="text-[11px] text-muted-foreground tracking-wide uppercase">
-              Squad · {playerEntities.length} players
+              Squad
             </p>
             {data.isauto && (
               <TooltipProvider delayDuration={0}>
