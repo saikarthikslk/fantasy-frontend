@@ -34,7 +34,6 @@ import {
 } from '@/components/ui/dialog'
 import { Loader2, AlertCircle, Check, X, ChevronLeft, Sparkles } from 'lucide-react'
 import { Kbd } from '@/components/ui/kbd'
-import { cn } from '@/lib/utils'
 
 // Hoisted for useSyncExternalStore (must be stable references)
 const MOBILE_MQ = '(max-width: 1023px)'
