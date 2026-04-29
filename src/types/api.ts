@@ -8,6 +8,7 @@ export type ApiUser = {
   gamename?: string
   profielpic?: string
   autoteam?: boolean
+  replacementmethod?: ReplacementMethod
   createdAt?: string
   updatedAt?: string
 }
@@ -55,8 +56,6 @@ export type ApiPlayer = {
   battingStyle?: string
   bowlingStyle?: string
   type?: string
-  /** When set by backend, used for Dream11-style credit cap. */
-  credits?: number
   points?: number | null
   /** Playing status after lineup announced (30 min before match). */
   category?: string | null

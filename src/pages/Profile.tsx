@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useUserProfile, useUpdateGameName, useUploadProfilePicture, useUpdateAutoTeam } from '@/hooks/useQueries'
+import { useUserProfile, useUpdateGameName, useUploadProfilePicture, useUpdateAutoTeam, useUpdateReplacementMethod } from '@/hooks/useQueries'
 import type { ReplacementMethod } from '@/types/api'
 import {
   Loader2,
@@ -63,7 +63,8 @@ export function Profile() {
   const updateGameNameMutation = useUpdateGameName()
   const uploadPictureMutation = useUploadProfilePicture()
   const autoTeamMutation = useUpdateAutoTeam()
-  const [replacementMethod, setReplacementMethod] = useState<ReplacementMethod>('overall')
+  const replacementMethodMutation = useUpdateReplacementMethod()
+  const replacementMethod: ReplacementMethod = user?.replacementmethod ?? 'overall'
 
   const [gameName, setGameName] = useState('')
   const [savedProfileUrl, setSavedProfileUrl] = useState<string | null>(null)
@@ -192,46 +193,33 @@ export function Profile() {
       />
 
       {/* Profile header — avatar + identity */}
-      <div className="flex flex-col items-center mb-8">
-        <div className="relative group mb-4">
-          <Avatar className="h-28 w-28 border-4 border-background shadow-lg">
+      <div className="flex flex-col items-center mb-10">
+        <div className="relative mb-5">
+          <Avatar className="h-24 w-24 ring-1 ring-border shadow-lg shadow-black/30">
             {savedProfileUrl && <AvatarImage src={savedProfileUrl} />}
-            <AvatarFallback>
-              <Camera className="h-10 w-10 text-muted-foreground" />
+            <AvatarFallback className="text-2xl font-semibold bg-secondary text-foreground">
+              {(user?.gamename || displayEmail).charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
 
-          {/* Hover overlay to change photo */}
+          {/* Floating edit badge — bottom-right */}
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="absolute inset-0 flex flex-col items-center justify-center rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+            aria-label="Change profile photo"
+            className="absolute -bottom-0.5 -right-0.5 h-8 w-8 flex items-center justify-center rounded-full bg-foreground text-background ring-2 ring-background shadow-md hover:scale-105 active:scale-95 transition-transform cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
-            <Camera className="h-5 w-5 text-white mb-0.5" />
-            <span className="text-[10px] font-medium text-white/90">Change</span>
+            {uploadPictureMutation.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Camera className="h-3.5 w-3.5" />
+            )}
           </button>
-
-          {/* Upload spinner overlay */}
-          {uploadPictureMutation.isPending && (
-            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/60">
-              <Loader2 className="h-6 w-6 text-white animate-spin" />
-            </div>
-          )}
         </div>
 
-        {/* Change photo text button (always visible, good for mobile) */}
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className="text-sm text-primary hover:text-primary/80 font-medium transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-        >
-          Change photo
-        </button>
-
-        <h1 className="text-xl font-bold mt-3">{user?.gamename || displayEmail}</h1>
-        <p className="text-sm text-muted-foreground">{displayEmail}</p>
+        <h1 className="text-xl font-semibold tracking-tight">{user?.gamename || displayEmail}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{displayEmail}</p>
       </div>
 
       {/* Notifications */}
@@ -252,12 +240,12 @@ export function Profile() {
         </Card>
       )}
 
-      {/* Game name card */}
+      {/* User name card */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Pencil className="h-4 w-4 text-muted-foreground" />
-            Game Name
+            User Name
           </CardTitle>
           <CardDescription>This is how you appear on the leaderboard</CardDescription>
         </CardHeader>
@@ -268,10 +256,10 @@ export function Profile() {
               value={gameName}
               onChange={(e) => setGameName(e.target.value)}
               disabled={uploading}
-              placeholder="Enter your game name"
+              placeholder="Enter your user name"
               className="flex-1"
             />
-            <Button type="submit" disabled={uploading} size="default" className="gap-2 shrink-0">
+            <Button type="submit" disabled={uploading || gameName.trim() === (user?.gamename ?? '').trim() || gameName.trim().length === 0} size="default" className="gap-2 shrink-0">
               {updateGameNameMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
@@ -316,35 +304,37 @@ export function Profile() {
             />
           </div>
 
-          {/* Bench replacement method */}
-          <div className="flex items-start justify-between gap-4 mt-4 pt-4 border-t">
-            <div className="min-w-0 flex-1">
+          {/* Auto-bench replacement method */}
+          <div className="mt-4 pt-4 border-t">
+            <div className="flex items-center justify-between gap-4">
               <label htmlFor="replacement-method" className="text-sm font-medium cursor-pointer">
-                Bench replacement
+                Auto-bench replacement
               </label>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Got a pick who didn't make the playing XI?{' '}
-                {replacementMethod === 'overall'
-                  ? "We'll swap them for the best overall scorer from past matches."
-                  : "We'll swap them for the best scorer in the same role from past matches."}
-                {' '}Each replacement's score counts at 90%. Final Squad stays within fantasy rules.
-              </p>
+              <Select
+                value={replacementMethod}
+                disabled={replacementMethodMutation.isPending}
+                onValueChange={(value) => {
+                  replacementMethodMutation.mutate(value as ReplacementMethod, {
+                    onSuccess: () => showSuccess('Preference updated!'),
+                  })
+                }}
+              >
+                <SelectTrigger id="replacement-method" className="w-[150px] shrink-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="overall">Overall score</SelectItem>
+                  <SelectItem value="role">Same role</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select
-              value={replacementMethod}
-              onValueChange={(value) => {
-                setReplacementMethod(value as ReplacementMethod)
-                showSuccess('Preference updated!')
-              }}
-            >
-              <SelectTrigger id="replacement-method" className="w-[150px] shrink-0 mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="overall">Overall score</SelectItem>
-                <SelectItem value="role">Same role</SelectItem>
-              </SelectContent>
-            </Select>
+            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+              Got a pick who didn't make the playing XI?{' '}
+              {replacementMethod === 'overall'
+                ? "We'll swap them for the best overall scorer from past matches."
+                : "We'll swap them for the best scorer in the same role from past matches."}
+              {' '}Each replacement's score counts at 90%. Final Squad stays within fantasy rules.
+            </p>
           </div>
 
           {/* Keyboard Shortcuts — desktop only */}

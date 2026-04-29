@@ -7,8 +7,8 @@ import {
   fetchScorecard,
   createTeam,
 } from '@/api/matchesApi'
-import { getUserProfile, updateGameName, updateAutoTeam, uploadProfilePicture } from '@/api/profileApi'
-import type { CreateDreamTeamBody } from '@/types/api'
+import { getUserProfile, updateGameName, updateAutoTeam, updateReplacementMethod, uploadProfilePicture } from '@/api/profileApi'
+import type { CreateDreamTeamBody, ReplacementMethod } from '@/types/api'
 
 // ── Query keys ──────────────────────────────────────────
 
@@ -100,6 +100,14 @@ export function useUpdateAutoTeam() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (autoteam: boolean) => updateAutoTeam(autoteam),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: queryKeys.userProfile }) },
+  })
+}
+
+export function useUpdateReplacementMethod() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (method: ReplacementMethod) => updateReplacementMethod(method),
     onSuccess: () => { qc.invalidateQueries({ queryKey: queryKeys.userProfile }) },
   })
 }

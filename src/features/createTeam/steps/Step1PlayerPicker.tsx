@@ -17,7 +17,6 @@ interface Step1Props {
   selected: Set<string>
   selectedList: ApiPlayer[]
   roleCounts: Record<FantasyRole, number>
-  creditsLeft: number
   hint: string | null
   squadValid: boolean
   validationErrors: string[]
@@ -39,7 +38,7 @@ interface Step1Props {
 
 export function Step1PlayerPicker({
   players, matchMeta, byId, selected, selectedList, roleCounts,
-  creditsLeft, hint, squadValid, validationErrors,
+  hint, squadValid, validationErrors,
   onPick, onClearAll, onNext, onSmartXI, smartXILoading,
   apiError, isAnnounced, smartXIIds = new Set(),
 }: Step1Props) {
@@ -117,12 +116,6 @@ export function Step1PlayerPicker({
             <Progress value={(selectedList.length / SQUAD_SIZE) * 100} className="h-1 w-14 mt-0.5" />
           </div>
 
-          {/* Credits */}
-          <div className="shrink-0">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Credits</p>
-            <p className="text-sm font-semibold tabular-nums">{creditsLeft.toFixed(1)}</p>
-          </div>
-
           {/* Spacer */}
           <div className="flex-1" />
 
@@ -132,7 +125,7 @@ export function Step1PlayerPicker({
               variant="outline"
               disabled={smartXILoading}
               onClick={onSmartXI}
-              title="Auto-pick a balanced XI based on player credits, role balance, and team diversity"
+              title="Auto-pick a balanced XI based on role balance and team diversity"
               className="gap-1.5 h-11 rounded-xl text-sm font-semibold"
             >
               <Sparkles className="h-4 w-4" />

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { usePageShortcuts, useKeyboard } from '@/keyboard/useKeyboard'
 import type { ApiMatch, ApiPlayer } from '@/types/api'
 import {
-  creditsForPlayer,
   normalizeRole,
   playerKey,
   roleLabel,
@@ -33,6 +32,7 @@ import {
   DialogDescription, DialogFooter,
 } from '@/components/ui/dialog'
 import { Loader2, AlertCircle, Check, X, ChevronLeft, Sparkles } from 'lucide-react'
+import { FlameIcon } from '@/components/icons/FlameIcon'
 import { Kbd } from '@/components/ui/kbd'
 
 // Hoisted for useSyncExternalStore (must be stable references)
@@ -256,7 +256,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
             {smartXIPhase === 'done' && 'Smart XI ready'}
           </p>
           <p className="text-sm text-muted-foreground">
-            {smartXIPhase === 'analyzing' && 'Evaluating credits, roles, and form'}
+            {smartXIPhase === 'analyzing' && 'Evaluating roles, form, and team balance'}
             {smartXIPhase === 'picking' && 'Picking the strongest balanced lineup'}
             {smartXIPhase === 'done' && 'Captain and vice-captain assigned'}
           </p>
@@ -305,7 +305,6 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
                 selected={draft.selected}
                 selectedList={draft.selectedList}
                 roleCounts={draft.roleCounts}
-                creditsLeft={draft.creditsLeft}
                 hint={draft.hint}
                 squadValid={draft.squadValid}
                 validationErrors={draft.validationErrors}
@@ -432,7 +431,7 @@ function DesktopCreateTeam({
   const isDragging = useRef(false)
 
   const {
-    selected, selectedList, byId, roleCounts, creditsLeft,
+    selected, selectedList, byId, roleCounts,
     hint, validationErrors, captainViceErrors, canSave,
     nTeam1, nTeam2, captainId, viceCaptainId,
     pickPlayer, clearAll, removePlayer,
@@ -504,7 +503,6 @@ function DesktopCreateTeam({
   const renderPlayerTile = (p: ApiPlayer) => {
     const pk = playerKey(p)
     const on = selected.has(pk)
-    const cr = creditsForPlayer(p)
     const role = normalizeRole(p.type)
     const res = on ? ({ ok: true } as const) : tryAddPlayer(p, selected, byId, matchMeta)
     const disabled = !on && !res.ok
@@ -552,7 +550,19 @@ function DesktopCreateTeam({
             )}
           </div>
         </div>
-        <span className="text-sm font-semibold tabular-nums shrink-0 text-muted-foreground">{cr.toFixed(1)}</span>
+        {p.totalpoints != null && p.totalpoints > 0 && (
+          <div
+            className="flex flex-col items-end shrink-0"
+            title="Total fantasy points earned this season"
+            aria-label={`${p.totalpoints} fantasy points earned this season`}
+          >
+            <span className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/60 leading-none">Total season pts</span>
+            <span className="flex items-center gap-0.5 text-[13px] font-bold text-gold tabular-nums leading-none mt-1">
+              <FlameIcon className="h-3 w-3" />
+              {p.totalpoints}
+            </span>
+          </div>
+        )}
         {on && <Check className="h-4 w-4 shrink-0" style={{ color: checkColor }} />}
       </button>
     )
@@ -572,7 +582,7 @@ function DesktopCreateTeam({
             <p className="text-lg font-semibold truncate">{action === 'edit' ? 'Edit' : 'Build'} your squad</p>
             <p className="text-[11px] text-muted-foreground truncate">{t1} vs {t2}</p>
           </div>
-          <Button variant="outline" disabled={smartXILoading} onClick={onSmartXI} title="Auto-pick a balanced XI based on player credits, role balance, and team diversity" className="gap-1.5 shrink-0">
+          <Button variant="outline" disabled={smartXILoading} onClick={onSmartXI} title="Auto-pick a balanced XI based on role balance and team diversity" className="gap-1.5 shrink-0">
             <Sparkles className="h-4 w-4" />
             {smartXILoading ? 'Picking…' : 'Smart XI'}
             <Kbd>S</Kbd>
@@ -592,11 +602,6 @@ function DesktopCreateTeam({
               <span className="text-xs text-muted-foreground">/{SQUAD_SIZE}</span>
             </div>
             <Progress value={(selectedList.length / SQUAD_SIZE) * 100} className="h-1 w-16 mt-1" />
-          </div>
-          <Separator orientation="vertical" className="h-6" />
-          <div className="shrink-0">
-            <p className="text-xs text-muted-foreground">Credits</p>
-            <p className="text-sm font-semibold tabular-nums">{creditsLeft.toFixed(1)} <span className="text-xs font-normal text-muted-foreground">left</span></p>
           </div>
           <Separator orientation="vertical" className="h-6" />
           <div className="flex items-center gap-1.5 shrink-0">
@@ -723,38 +728,58 @@ function DesktopCreateTeam({
           <div className="w-px h-8 bg-border group-hover/handle:bg-primary/40 group-active/handle:bg-primary transition-colors rounded-full" />
         </div>
 
-        {/* Your XI panel */}
+        {/* Your XI panel — Squad Console */}
         <div
-          className="min-w-[320px] shrink-0 flex flex-col overflow-hidden bg-card"
+          className="min-w-[340px] shrink-0 flex flex-col overflow-hidden relative bg-linear-to-b from-muted/15 via-background to-muted/15"
           style={{ width: rightWidth }}
         >
-          <div className="shrink-0 flex items-center justify-between gap-3 h-11 px-5 border-b">
-            <h3 className="text-sm font-semibold whitespace-nowrap">Your XI</h3>
-            <div className="flex items-center gap-2 min-w-0">
+          {/* Top accent line */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-gold/40 to-transparent pointer-events-none" />
+
+          {/* Header — single row, height matches left side role tabs */}
+          <div className="shrink-0 relative border-b">
+            <div className="flex items-center gap-3 px-5 py-2.5 sm:py-3 overflow-x-auto">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground shrink-0">Your Squad</span>
+              <span className="text-xs tabular-nums shrink-0">
+                <span className="font-semibold text-foreground">{selectedList.length}</span>
+                <span className="text-muted-foreground/50">/{SQUAD_SIZE}</span>
+              </span>
+              <div className="flex-1 min-w-0" />
               {captainId && (
-                <span className="flex items-center gap-1 text-[11px] truncate">
-                  <span className="h-4 w-4 rounded bg-blue-500 text-white text-[8px] font-bold flex items-center justify-center shrink-0">C</span>
-                  <span className="truncate">{byId.get(captainId)?.name?.split(' ').at(-1) ?? '—'}</span>
-                </span>
+                <div className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-gold/10 border border-gold/20 shrink-0">
+                  <span className="text-[8px] font-bold text-gold tracking-tight">C</span>
+                  <span className="text-[10px] text-gold/95 font-semibold tracking-wide truncate max-w-[60px]">{byId.get(captainId)?.name?.split(' ').at(-1) ?? '—'}</span>
+                </div>
               )}
               {viceCaptainId && (
-                <span className="flex items-center gap-1 text-[11px] truncate">
-                  <span className="h-4 w-4 rounded bg-violet-500 text-white text-[8px] font-bold flex items-center justify-center shrink-0">VC</span>
-                  <span className="truncate">{byId.get(viceCaptainId)?.name?.split(' ').at(-1) ?? '—'}</span>
-                </span>
+                <div className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-primary/8 border border-primary/15 shrink-0">
+                  <span className="text-[8px] font-bold text-primary tracking-tight">VC</span>
+                  <span className="text-[10px] text-primary/95 font-semibold tracking-wide truncate max-w-[60px]">{byId.get(viceCaptainId)?.name?.split(' ').at(-1) ?? '—'}</span>
+                </div>
               )}
-              <span className="text-sm font-bold tabular-nums text-primary shrink-0">{selectedList.length}<span className="text-muted-foreground font-normal text-xs">/{SQUAD_SIZE}</span></span>
             </div>
+            {/* Progress fill — sits on top of the bottom border */}
+            <div
+              className="absolute -bottom-px left-0 h-px bg-foreground transition-all duration-500"
+              style={{ width: `${(selectedList.length / SQUAD_SIZE) * 100}%` }}
+            />
           </div>
 
-          <div className="flex-1 min-h-0 flex flex-col overflow-y-scroll lg:overflow-hidden lg:grid lg:grid-rows-[repeat(11,1fr)] px-2 lg:px-0">
+          {/* Rows */}
+          <div className="flex-1 min-h-0 flex flex-col overflow-y-scroll lg:overflow-hidden lg:grid lg:grid-rows-[repeat(11,1fr)]">
             {Array.from({ length: SQUAD_SIZE }, (_, i) => {
               const p = selectedList[i]
               if (!p) {
                 return (
-                  <div key={i} className="flex items-center gap-3 px-4 py-3 lg:py-0 border-b border-dashed border-border/10 last:border-0">
-                    <span className="text-[11px] text-muted-foreground/20 tabular-nums w-4">{i + 1}</span>
-                    <div className="h-px flex-1 border-b border-dashed border-border/10" />
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 px-5 py-2 lg:py-0 border-b border-border/6 last:border-0"
+                  >
+                    <span className="font-mono text-[9px] text-muted-foreground/20 tabular-nums w-5 font-medium">{String(i + 1).padStart(2, '0')}</span>
+                    <div className="h-7 w-7 rounded-full border border-dashed border-border/25 shrink-0 flex items-center justify-center">
+                      <span className="text-[10px] text-muted-foreground/25 leading-none">+</span>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground/30 italic">Open slot</span>
                   </div>
                 )
               }
@@ -764,33 +789,72 @@ function DesktopCreateTeam({
               const isVc = viceCaptainId === pk
               const isSmartXI = smartXIIds.has(String(p.id))
               return (
-                <div key={pk} className="flex items-center gap-3 px-4 py-2.5 lg:py-0 lg:px-3 border-b border-border/8 last:border-0 group/row hover:bg-muted/30 transition-colors">
-                  <div className="relative shrink-0">
-                    <img
-                      className={`h-9 w-9 lg:h-7 lg:w-7 rounded-full object-cover bg-muted ${isCap ? 'ring-[1.5px] ring-blue-500' : isVc ? 'ring-[1.5px] ring-violet-500' : ''}`}
-                      src={playerImageUrl(p.imageId)} alt=""
-                    />
-                    {(isCap || isVc) && (
-                      <span className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded text-[7px] font-bold flex items-center justify-center ${isCap ? 'bg-blue-500 text-white' : 'bg-violet-500 text-white'}`}>
-                        {isCap ? 'C' : 'VC'}
-                      </span>
-                    )}
-                  </div>
+                <div
+                  key={pk}
+                  className={`relative flex items-center gap-3 px-5 py-2 lg:py-0 border-b border-border/6 last:border-0 group/row transition-all ${
+                    isCap ? 'bg-linear-to-r from-gold/8 via-gold/3 to-transparent' :
+                    isVc ? 'bg-linear-to-r from-primary/6 via-primary/2 to-transparent' :
+                    'hover:bg-muted/40'
+                  }`}
+                >
+                  {/* Side accent bar for C/VC */}
+                  {isCap && <div className="absolute left-0 top-0 bottom-0 w-px bg-gold pointer-events-none" />}
+                  {isVc && <div className="absolute left-0 top-0 bottom-0 w-px bg-primary pointer-events-none" />}
+
+                  <span className={`font-mono text-[9px] tabular-nums w-5 font-medium transition-colors ${
+                    isCap ? 'text-gold/70' : isVc ? 'text-primary/70' : 'text-muted-foreground/40 group-hover/row:text-muted-foreground/80'
+                  }`}>{String(i + 1).padStart(2, '0')}</span>
+
+                  <img
+                    className={`h-7 w-7 rounded-full object-cover bg-muted shrink-0 transition-all ${
+                      isCap ? 'ring-2 ring-gold shadow-[0_0_10px_-2px_oklch(0.795_0.184_86.05/0.6)]' :
+                      isVc ? 'ring-2 ring-primary shadow-[0_0_10px_-2px_oklch(0.985_0_0/0.3)]' :
+                      'ring-1 ring-border/40 group-hover/row:ring-border'
+                    }`}
+                    src={playerImageUrl(p.imageId)}
+                    alt=""
+                  />
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1">
-                      <span className="text-[13px] font-medium truncate">{p.name}</span>
-                      {isSmartXI && <Sparkles className="h-3 w-3 shrink-0 fill-gold text-gold" />}
+                      <span className={`text-[12px] truncate ${isCap || isVc ? 'font-semibold' : 'font-medium'}`}>{p.name}</span>
+                      {isSmartXI && <Sparkles className="h-2.5 w-2.5 shrink-0 fill-gold text-gold" />}
                     </div>
-                    <span className="text-[10px] text-muted-foreground">{p.team?.teamSName ?? p.team?.teamName ?? ''} · {role}</span>
+                    <span className="text-[9px] text-muted-foreground/60 uppercase tracking-wider font-medium">
+                      {p.team?.teamSName ?? p.team?.teamName ?? ''}
+                      <span className="text-muted-foreground/30 mx-1">·</span>
+                      {role}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button type="button" onClick={(e) => { e.stopPropagation(); selectCaptain(pk) }}
-                      className={`h-8 px-2.5 lg:h-7 lg:px-2 rounded-md text-[11px] lg:text-[10px] font-bold flex items-center justify-center cursor-pointer transition-all ${isCap ? 'bg-blue-500 text-white shadow-sm' : 'text-muted-foreground/40 hover:bg-blue-500/15 hover:text-blue-400'}`}>C</button>
-                    <button type="button" onClick={(e) => { e.stopPropagation(); selectViceCaptain(pk) }}
-                      className={`h-8 px-2 lg:h-7 lg:px-1.5 rounded-md text-[11px] lg:text-[10px] font-bold flex items-center justify-center cursor-pointer transition-all ${isVc ? 'bg-violet-500 text-white shadow-sm' : 'text-muted-foreground/40 hover:bg-violet-500/15 hover:text-violet-400'}`}>VC</button>
-                    <button type="button" onClick={() => pickPlayer(p)}
-                      className="h-8 w-8 lg:h-7 lg:w-7 rounded-md flex items-center justify-center text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 cursor-pointer opacity-0 group-hover/row:opacity-100 transition-opacity">
-                      <X className="h-3.5 w-3.5" />
+
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); selectCaptain(pk) }}
+                      aria-label="Set as captain"
+                      className={`h-6 w-6 rounded-md text-[10px] font-bold flex items-center justify-center cursor-pointer transition-all ${
+                        isCap
+                          ? 'bg-gold text-black shadow-sm'
+                          : 'text-muted-foreground/30 hover:text-gold hover:bg-gold/10 opacity-0 group-hover/row:opacity-100'
+                      }`}
+                    >C</button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); selectViceCaptain(pk) }}
+                      aria-label="Set as vice-captain"
+                      className={`h-6 px-1.5 rounded-md text-[10px] font-bold flex items-center justify-center cursor-pointer transition-all ${
+                        isVc
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'text-muted-foreground/30 hover:text-primary hover:bg-primary/10 opacity-0 group-hover/row:opacity-100'
+                      }`}
+                    >VC</button>
+                    <button
+                      type="button"
+                      onClick={() => pickPlayer(p)}
+                      aria-label="Remove player"
+                      className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground/20 hover:text-destructive hover:bg-destructive/10 cursor-pointer opacity-0 group-hover/row:opacity-100 transition-all"
+                    >
+                      <X className="h-3 w-3" />
                     </button>
                   </div>
                 </div>

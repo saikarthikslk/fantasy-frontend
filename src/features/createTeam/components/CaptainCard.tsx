@@ -1,3 +1,4 @@
+import { FlameIcon } from '@/components/icons/FlameIcon'
 import { playerImageUrl } from '@/api/client'
 import { normalizeRole } from '@/fantasy/dream11Rules'
 import type { ApiPlayer } from '@/types/api'
@@ -54,7 +55,21 @@ export function CaptainCard({ player, isCaptain, isViceCaptain, onClick }: Capta
       {/* Name + meta */}
       <div className="flex-1 min-w-0">
         <p className="text-[15px] font-semibold truncate">{player.name}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{role} · {player.team?.teamSName ?? player.team?.teamName ?? ''}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <p className="text-xs text-muted-foreground">
+            {role} · {player.team?.teamSName ?? player.team?.teamName ?? ''}
+          </p>
+          {player.totalpoints != null && player.totalpoints > 0 && (
+            <span
+              className="inline-flex items-center gap-0.5 text-[11px] font-bold text-gold tabular-nums"
+              title="Total fantasy points earned this season"
+              aria-label={`${player.totalpoints} fantasy points earned this season`}
+            >
+              <FlameIcon className="h-2.5 w-2.5" />
+              {player.totalpoints}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Multiplier badge */}
