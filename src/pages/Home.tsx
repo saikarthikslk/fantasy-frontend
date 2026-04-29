@@ -90,7 +90,7 @@ export function Home() {
               step: '2',
               icon: Users,
               title: 'Create your dream team',
-              desc: 'Stay within credits, balance WK / BAT / AR / BOWL, and max players per real team — then pick captain & VC.',
+              desc: 'Balance WK / BAT / AR / BOWL and max players per real team — then pick captain & VC.',
             },
             {
               step: '3',

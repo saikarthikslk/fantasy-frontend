@@ -2,7 +2,6 @@ import type { ApiMatch, ApiPlayer } from '../types/api'
 
 /** Squad rules aligned with common cricket fantasy apps (Dream11-style). */
 export const SQUAD_SIZE = 11
-export const TOTAL_CREDITS_CAP = 130
 /** Max players from one real team in the fixture. */
 export const MAX_PLAYERS_PER_SIDE = 7
 
@@ -13,19 +12,6 @@ export const ROLE_LIMITS: Record<FantasyRole, { min: number; max: number }> = {
   BAT: { min: 1, max: 8 },
   AR: { min: 1, max: 8 },
   BOWL: { min: 1, max: 8 },
-}
-
-/** Deterministic credits when API does not send a value (8.0–10.5, step 0.5). */
-export function creditsForPlayer(p: ApiPlayer): number {
-  if (typeof p.credits === 'number' && Number.isFinite(p.credits)) return roundCredit(p.credits)
-  let h = 0
-  for (let i = 0; i < p.id.length; i++) h = (h * 31 + p.id.charCodeAt(i)) | 0
-  const steps = Math.abs(h) % 6
-  return roundCredit(8 + steps * 0.5)
-}
-
-function roundCredit(n: number): number {
-  return Math.round(n * 10) / 10
 }
 
 export function normalizeRole(raw: string | undefined): FantasyRole {
@@ -55,10 +41,6 @@ export function countRoles(players: ApiPlayer[]): Record<FantasyRole, number> {
   return c
 }
 
-export function totalCredits(players: ApiPlayer[]): number {
-  return players.reduce((s, p) => s + creditsForPlayer(p), 0)
-}
-
 export function countByTeamId(
   players: ApiPlayer[],
 ): Map<number, number> {
@@ -73,7 +55,6 @@ export function countByTeamId(
 
 export type AddBlockReason =
   | 'full'
-  | 'credits'
   | 'team_cap'
   | 'role_max'
 
@@ -93,9 +74,6 @@ export function tryAddPlayer(
 
   const selected = [...selectedIds].map((id) => byId.get(id)!).filter(Boolean)
   const next = [...selected, p]
-
-  if (totalCredits(next) > TOTAL_CREDITS_CAP + 1e-6)
-    return { ok: false, reason: 'credits' }
 
   const role = normalizeRole(p.type)
   const roles = countRoles(next)
@@ -120,13 +98,6 @@ export function validateCompleteSquad(players: ApiPlayer[]): string[] {
   if (players.length !== SQUAD_SIZE) {
     errors.push(`Pick exactly ${SQUAD_SIZE} players (currently ${players.length}).`)
     return errors
-  }
-
-  const credits = totalCredits(players)
-  if (credits > TOTAL_CREDITS_CAP + 1e-6) {
-    errors.push(
-      `Total credits ${credits.toFixed(1)} exceed ${TOTAL_CREDITS_CAP} (Dream11-style cap).`,
-    )
   }
 
   const roles = countRoles(players)
@@ -180,7 +151,7 @@ export function groupByCategory(
 }
 
 export const RULES_SUMMARY_LINES = [
-  `${SQUAD_SIZE} players · ${TOTAL_CREDITS_CAP} credits`,
+  `${SQUAD_SIZE} players`,
   `WK ${ROLE_LIMITS.WK.min}–${ROLE_LIMITS.WK.max} · BAT ${ROLE_LIMITS.BAT.min}–${ROLE_LIMITS.BAT.max} · AR ${ROLE_LIMITS.AR.min}–${ROLE_LIMITS.AR.max} · BOWL ${ROLE_LIMITS.BOWL.min}–${ROLE_LIMITS.BOWL.max}`,
   `Max ${MAX_PLAYERS_PER_SIDE} players from one side`,
   'Choose 1 captain (C) and 1 vice-captain (VC) from your XI — different players',

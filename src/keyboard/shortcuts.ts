@@ -36,7 +36,7 @@ export const ALL_SHORTCUTS: ShortcutDef[] = [
   { id: 'md-create', keys: ['c'], label: 'Create / edit squad', description: 'Opens the team builder to create or edit your squad for this match.', group: 'Match Detail' },
 
   // Team Builder
-  { id: 'tb-smart', keys: ['s'], label: 'Smart Pick', description: 'Auto-picks a balanced XI based on player credits and form.', group: 'Team Builder' },
+  { id: 'tb-smart', keys: ['s'], label: 'Smart Pick', description: 'Auto-picks a balanced XI based on role balance and form.', group: 'Team Builder' },
   { id: 'tb-save', keys: ['Enter'], label: 'Save team', description: 'Saves your squad when all selections are valid.', group: 'Team Builder' },
   { id: 'tb-remove', keys: ['Del'], label: 'Remove last player', description: 'Removes the most recently selected player from your squad.', group: 'Team Builder' },
 

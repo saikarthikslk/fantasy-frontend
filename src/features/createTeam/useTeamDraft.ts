@@ -5,8 +5,6 @@ import {
   normalizeRole,
   playerKey,
   SQUAD_SIZE,
-  TOTAL_CREDITS_CAP,
-  totalCredits,
   tryAddPlayer,
   validateCompleteSquad,
   type AddBlockReason,
@@ -16,7 +14,6 @@ import {
 function blockHint(reason: AddBlockReason): string {
   switch (reason) {
     case 'full': return 'Squad full. Remove a player first.'
-    case 'credits': return `Exceeds ${TOTAL_CREDITS_CAP} credit cap.`
     case 'team_cap': return 'Max 7 from one team.'
     case 'role_max': return 'Role limit reached.'
     default: return 'Cannot add player.'
@@ -38,8 +35,6 @@ export interface TeamDraft {
   // Derived
   selectedList: ApiPlayer[]
   byId: Map<string, ApiPlayer>
-  creditsUsed: number
-  creditsLeft: number
   roleCounts: Record<FantasyRole, number>
   nTeam1: number
   nTeam2: number
@@ -78,8 +73,6 @@ export function useTeamDraft(
     [selected, byId],
   )
 
-  const creditsUsed = useMemo(() => totalCredits(selectedList), [selectedList])
-  const creditsLeft = Math.max(0, TOTAL_CREDITS_CAP - creditsUsed)
   const roleCounts = useMemo(() => countRoles(selectedList), [selectedList])
 
   const t1Id = matchMeta?.team1?.teamId
@@ -175,8 +168,6 @@ export function useTeamDraft(
     hint,
     selectedList,
     byId,
-    creditsUsed,
-    creditsLeft,
     roleCounts,
     nTeam1,
     nTeam2,
