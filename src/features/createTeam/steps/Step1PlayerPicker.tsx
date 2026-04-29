@@ -7,7 +7,7 @@ import { RoleFilterTabs } from '../components/RoleFilterTabs'
 import { PlayerPoolCard } from '../components/PlayerPoolCard'
 import { PlayerPool } from '../components/PlayerPool'
 import { StatusBanner } from '../components/StatusBanner'
-import { ChevronRight, Sparkles, Flame } from 'lucide-react'
+import { ChevronRight, Sparkles } from 'lucide-react'
 import { Kbd } from '@/components/ui/kbd'
 
 interface Step1Props {
