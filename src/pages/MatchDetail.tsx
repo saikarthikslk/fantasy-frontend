@@ -739,7 +739,7 @@ export function MatchDetail() {
   }
 
   return (
-    <div className="container pt-8 pb-20">
+    <div className="container pt-8">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
         <Link to={backUrl} className="hover:text-foreground transition-colors flex items-center gap-1 hover:no-underline">
@@ -981,12 +981,20 @@ export function MatchDetail() {
                     )}
                   </div>
                   {match.state === "Completed" && playerwon && (
-                    <div className="flex items-center justify-center gap-2 mt-2">
-                      <span className="text-sm text-muted-foreground">Fantasy Winner:</span>
-                      <span className="text-sm font-semibold">{playerwon}</span>
-                      {playerwonPoints != null && (
-                        <span className="text-xs text-muted-foreground">({playerwonPoints.toFixed(1)} pts)</span>
-                      )}
+                    <div className="mt-3 pt-3 border-t border-primary/15 flex flex-col items-center gap-1.5 text-center">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Fantasy Winner
+                      </span>
+                      <div className="flex flex-wrap items-baseline justify-center gap-x-2 gap-y-0.5 max-w-full">
+                        <span className="text-sm font-semibold capitalize text-foreground wrap-break-word">
+                          {playerwon}
+                        </span>
+                        {playerwonPoints != null && (
+                          <span className="text-xs font-medium tabular-nums text-primary/90">
+                            {playerwonPoints.toFixed(1)} pts
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -995,7 +1003,7 @@ export function MatchDetail() {
           </Card>
 
           {/* Tabs */}
-          <Tabs ref={tabsRef} value={tab} onValueChange={(v) => {
+          <Tabs ref={tabsRef} className="pb-20" value={tab} onValueChange={(v) => {
             setTab(v as DetailTab);
             setPage(1);
             setQuery("");
