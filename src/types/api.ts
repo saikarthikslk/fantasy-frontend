@@ -74,6 +74,22 @@ export type ApiCustomTeam = {
   created_at?: string
 }
 
+/** Single past-match performance row inside MatchSelection.stats[playerId] */
+export type PlayerMatchStat = {
+  team1: string
+  team2: string
+  ballsbowled: number
+  playerid: string
+  score: number
+  ballplayed: number
+  wickets: number
+  eco: number
+  /** Fantasy points awarded to this player for this past match. */
+  scoregiven: number
+  /** Chronological position; lower = earlier match, higher = more recent. */
+  pos: number
+}
+
 /** Mirrors com.security.demo.model.MatchSelection */
 export type ApiMatchSelection = {
   players?: ApiPlayer[]
@@ -83,6 +99,8 @@ export type ApiMatchSelection = {
   isannounced?: boolean
   /** Cumulative count of times this match's detail page has been opened. */
   views?: number
+  /** Past-match fantasy stats keyed by player id. */
+  stats?: Record<string, PlayerMatchStat[]>
 }
 
 export type MatchLbPlayer = {

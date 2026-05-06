@@ -1,10 +1,10 @@
 import { Check, Sparkles } from 'lucide-react'
-import { FlameIcon } from '@/components/icons/FlameIcon'
 import { playerImageUrl } from '@/api/client'
 import { normalizeRole } from '@/fantasy/dream11Rules'
 import { getTeamChipStyles, getTeamSelectedStyles, getTeamCheckColor } from '@/fantasy/teamColors'
 import { cn } from '@/lib/utils'
-import type { ApiPlayer } from '@/types/api'
+import type { ApiPlayer, PlayerMatchStat } from '@/types/api'
+import { LastMatchScores } from './LastMatchScores'
 
 interface PlayerPoolCardProps {
   player: ApiPlayer
@@ -12,9 +12,10 @@ interface PlayerPoolCardProps {
   isDisabled: boolean
   onClick: () => void
   isSmartXI?: boolean
+  recentStats?: PlayerMatchStat[]
 }
 
-export function PlayerPoolCard({ player, isSelected, isDisabled, onClick, isSmartXI = false }: PlayerPoolCardProps) {
+export function PlayerPoolCard({ player, isSelected, isDisabled, onClick, isSmartXI = false, recentStats }: PlayerPoolCardProps) {
   const role = normalizeRole(player.type)
   const teamShortName = player.team?.teamSName || player.team?.teamName || ''
 
@@ -69,19 +70,7 @@ export function PlayerPoolCard({ player, isSelected, isDisabled, onClick, isSmar
           )}
         </div>
       </div>
-      {player.totalpoints != null && player.totalpoints > 0 && (
-        <div
-          className="flex flex-col items-end shrink-0"
-          title="Total fantasy points earned this season"
-          aria-label={`${player.totalpoints} fantasy points earned this season`}
-        >
-          <span className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/60 leading-none">Season pts</span>
-          <span className="flex items-center gap-0.5 text-[13px] font-bold text-gold tabular-nums leading-none mt-1">
-            <FlameIcon className="h-3 w-3" />
-            {player.totalpoints}
-          </span>
-        </div>
-      )}
+      <LastMatchScores stats={recentStats} myTeam={teamShortName} />
       {isSelected && <Check className="h-4 w-4 shrink-0" style={{ color: checkColor }} />}
     </button>
   )
