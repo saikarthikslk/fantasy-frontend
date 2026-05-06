@@ -51,15 +51,17 @@ function chipBg(tier: Tier): string {
 }
 
 function opponentOf(stat: PlayerMatchStat, myTeam: string | undefined): string {
-  if (!myTeam) return stat.team2 || stat.team1 || '—'
-  return stat.team1 === myTeam ? stat.team2 : stat.team1
+  const t1 = stat.team1 ?? ''
+  const t2 = stat.team2 ?? ''
+  if (!myTeam) return t2 || t1 || '—'
+  return (t1 === myTeam ? t2 : t1) || '—'
 }
 
 export function LastMatchScores({ stats, myTeam, variant = 'compact' }: LastMatchScoresProps) {
   if (!stats || stats.length === 0) return null
 
   // First 3 entries by pos (pos=1 is most recent) — most recent leftmost.
-  const last3 = [...stats].sort((a, b) => a.pos - b.pos).slice(0, 3)
+  const last3 = [...stats].sort((a, b) => (a.pos ?? 0) - (b.pos ?? 0)).slice(0, 3)
 
   if (variant === 'inline') {
     return (
@@ -74,7 +76,7 @@ export function LastMatchScores({ stats, myTeam, variant = 'compact' }: LastMatc
           {last3.map((s, i) => {
             const opp = opponentOf(s, myTeam)
             const teamColor = getTeamBrandColor(opp)
-            const total = s.score + s.scoregiven
+            const total = (s.score ?? 0) + (s.scoregiven ?? 0)
             const tier = tierOf(total)
             return (
               <span
@@ -126,7 +128,7 @@ export function LastMatchScores({ stats, myTeam, variant = 'compact' }: LastMatc
         {last3.map((s, i) => {
           const opp = opponentOf(s, myTeam)
           const teamColor = getTeamBrandColor(opp)
-          const total = s.score + s.scoregiven
+          const total = (s.score ?? 0) + (s.scoregiven ?? 0)
           const tier = tierOf(total)
           return (
             <div
