@@ -76,18 +76,18 @@ export type ApiCustomTeam = {
 
 /** Single past-match performance row inside MatchSelection.stats[playerId] */
 export type PlayerMatchStat = {
-  team1: string
-  team2: string
-  ballsbowled: number
-  playerid: string
-  score: number
-  ballplayed: number
-  wickets: number
-  eco: number
+  team1?: string
+  team2?: string
+  ballsbowled?: number
+  playerid?: string
+  score?: number
+  ballplayed?: number
+  wickets?: number
+  eco?: number
   /** Fantasy points awarded to this player for this past match. */
-  scoregiven: number
+  scoregiven?: number
   /** Chronological position; lower = earlier match, higher = more recent. */
-  pos: number
+  pos?: number
 }
 
 /** Mirrors com.security.demo.model.MatchSelection */
