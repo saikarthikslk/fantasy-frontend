@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { usePageShortcuts, useKeyboard } from '@/keyboard/useKeyboard'
-import type { ApiMatch, ApiPlayer } from '@/types/api'
+import type { ApiMatch, ApiPlayer, PlayerMatchStat } from '@/types/api'
 import {
   normalizeRole,
   playerKey,
@@ -23,6 +23,7 @@ import { StepIndicator, TeamDots } from './components/StepIndicator'
 
 // Desktop-shared UI
 import { PlayerPool } from './components/PlayerPool'
+import { LastMatchScores } from './components/LastMatchScores'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -32,7 +33,6 @@ import {
   DialogDescription, DialogFooter,
 } from '@/components/ui/dialog'
 import { Loader2, AlertCircle, Check, X, ChevronLeft, Sparkles } from 'lucide-react'
-import { FlameIcon } from '@/components/icons/FlameIcon'
 import { Kbd } from '@/components/ui/kbd'
 
 // Hoisted for useSyncExternalStore (must be stable references)
@@ -319,6 +319,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
                 apiError={apiError}
                 isAnnounced={isAnnounced}
                 smartXIIds={smartXIIds}
+                playerStats={matchSelection?.stats}
               />
             </div>
             <div className="w-1/2 h-full flex flex-col overflow-hidden">
@@ -390,6 +391,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
     onDismissSmartHint={() => setSmartXIPicked(false)}
     isAnnounced={isAnnounced}
     smartXIIds={smartXIIds}
+    playerStats={matchSelection?.stats}
   /></>
 }
 
@@ -415,13 +417,14 @@ interface DesktopProps {
   onDismissSmartHint: () => void
   isAnnounced: boolean
   smartXIIds: Set<string>
+  playerStats?: Record<string, PlayerMatchStat[]>
 }
 
 function DesktopCreateTeam({
   action, onClose, draft, players, matchMeta,
   t1, t2, apiError, saving, success, onSubmit,
   onSmartXI, smartXILoading, smartXIPicked, onDismissSmartHint, isAnnounced,
-  smartXIIds,
+  smartXIIds, playerStats,
 }: DesktopProps) {
   const [roleFilter, setRoleFilter] = useState<'ALL' | FantasyRole>('WK')
   const [rightWidth, setRightWidth] = useState(360)
@@ -550,19 +553,12 @@ function DesktopCreateTeam({
             )}
           </div>
         </div>
-        {p.totalpoints != null && p.totalpoints > 0 && (
-          <div
-            className="flex flex-col items-end shrink-0"
-            title="Total fantasy points earned this season"
-            aria-label={`${p.totalpoints} fantasy points earned this season`}
-          >
-            <span className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/60 leading-none">Total season pts</span>
-            <span className="flex items-center gap-0.5 text-[13px] font-bold text-gold tabular-nums leading-none mt-1">
-              <FlameIcon className="h-3 w-3" />
-              {p.totalpoints}
-            </span>
-          </div>
-        )}
+        <LastMatchScores
+          stats={
+            getEffectiveCategory(p, isAnnounced) !== 'bench' ? playerStats?.[p.id] : undefined
+          }
+          myTeam={teamShortName}
+        />
         {on && <Check className="h-4 w-4 shrink-0" style={{ color: checkColor }} />}
       </button>
     )

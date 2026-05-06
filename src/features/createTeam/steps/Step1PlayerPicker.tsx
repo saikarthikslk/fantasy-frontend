@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
-import type { ApiMatch, ApiPlayer } from '@/types/api'
-import { normalizeRole, playerKey, tryAddPlayer, SQUAD_SIZE, type FantasyRole } from '@/fantasy/dream11Rules'
+import type { ApiMatch, ApiPlayer, PlayerMatchStat } from '@/types/api'
+import { normalizeRole, playerKey, tryAddPlayer, SQUAD_SIZE, getEffectiveCategory, type FantasyRole } from '@/fantasy/dream11Rules'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { RoleFilterTabs } from '../components/RoleFilterTabs'
@@ -34,6 +34,7 @@ interface Step1Props {
   apiError: string | null
   isAnnounced: boolean
   smartXIIds?: Set<string>
+  playerStats?: Record<string, PlayerMatchStat[]>
 }
 
 export function Step1PlayerPicker({
@@ -41,6 +42,7 @@ export function Step1PlayerPicker({
   hint, squadValid, validationErrors,
   onPick, onClearAll, onNext, onSmartXI, smartXILoading,
   apiError, isAnnounced, smartXIIds = new Set(),
+  playerStats,
 }: Step1Props) {
   const [roleFilter, setRoleFilter] = useState<'ALL' | FantasyRole>('WK')
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -59,6 +61,8 @@ export function Step1PlayerPicker({
     const res = on ? ({ ok: true } as const) : tryAddPlayer(p, selected, byId, matchMeta)
     const disabled = !on && !res.ok
     const isSmartXI = smartXIIds.has(String(p.id))
+    const cat = getEffectiveCategory(p, isAnnounced)
+    const showStats = cat === 'playing XI' || cat === 'substitutes'
     return (
       <PlayerPoolCard
         key={pk}
@@ -67,6 +71,7 @@ export function Step1PlayerPicker({
         isDisabled={disabled}
         onClick={() => onPick(p)}
         isSmartXI={isSmartXI}
+        recentStats={showStats ? playerStats?.[p.id] : undefined}
       />
     )
   }

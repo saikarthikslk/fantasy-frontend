@@ -1,16 +1,17 @@
-import { FlameIcon } from '@/components/icons/FlameIcon'
 import { playerImageUrl } from '@/api/client'
 import { normalizeRole } from '@/fantasy/dream11Rules'
-import type { ApiPlayer } from '@/types/api'
+import type { ApiPlayer, PlayerMatchStat } from '@/types/api'
+import { LastMatchScores } from './LastMatchScores'
 
 interface CaptainCardProps {
   player: ApiPlayer
   isCaptain: boolean
   isViceCaptain: boolean
   onClick: () => void
+  recentStats?: PlayerMatchStat[]
 }
 
-export function CaptainCard({ player, isCaptain, isViceCaptain, onClick }: CaptainCardProps) {
+export function CaptainCard({ player, isCaptain, isViceCaptain, onClick, recentStats }: CaptainCardProps) {
   const role = normalizeRole(player.type)
   const assigned = isCaptain || isViceCaptain
 
@@ -59,16 +60,11 @@ export function CaptainCard({ player, isCaptain, isViceCaptain, onClick }: Capta
           <p className="text-xs text-muted-foreground">
             {role} · {player.team?.teamSName ?? player.team?.teamName ?? ''}
           </p>
-          {player.totalpoints != null && player.totalpoints > 0 && (
-            <span
-              className="inline-flex items-center gap-0.5 text-[11px] font-bold text-gold tabular-nums"
-              title="Total fantasy points earned this season"
-              aria-label={`${player.totalpoints} fantasy points earned this season`}
-            >
-              <FlameIcon className="h-2.5 w-2.5" />
-              {player.totalpoints}
-            </span>
-          )}
+          <LastMatchScores
+            stats={recentStats}
+            myTeam={player.team?.teamSName ?? player.team?.teamName}
+            variant="inline"
+          />
         </div>
       </div>
 
