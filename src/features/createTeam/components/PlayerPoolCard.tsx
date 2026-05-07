@@ -2,7 +2,7 @@ import { Check, Sparkles } from 'lucide-react'
 import { playerImageUrl } from '@/api/client'
 import { normalizeRole } from '@/fantasy/dream11Rules'
 import { getTeamChipStyles, getTeamSelectedStyles, getTeamCheckColor } from '@/fantasy/teamColors'
-import { cn } from '@/lib/utils'
+import { cn, shortPlayerName } from '@/lib/utils'
 import type { ApiPlayer, PlayerMatchStat } from '@/types/api'
 import { LastMatchScores } from './LastMatchScores'
 
@@ -59,8 +59,8 @@ export function PlayerPoolCard({ player, isSelected, isDisabled, onClick, isSmar
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{player.name}</p>
-        <div className="flex items-center gap-1.5 mt-0.5">
+        <p className="text-sm font-medium truncate" title={player.name}>{shortPlayerName(player.name)}</p>
+        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
           <span className="text-[11px] text-muted-foreground">{role}</span>
           {isSmartXI && (
             <span className="inline-flex items-center gap-0.5 rounded-md border border-gold/40 bg-gold/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-gold">
@@ -68,9 +68,12 @@ export function PlayerPoolCard({ player, isSelected, isDisabled, onClick, isSmar
               Smart XI
             </span>
           )}
+          {isSelected && (
+            <LastMatchScores stats={recentStats} myTeam={teamShortName} variant="inline" />
+          )}
         </div>
       </div>
-      <LastMatchScores stats={recentStats} myTeam={teamShortName} />
+      {!isSelected && <LastMatchScores stats={recentStats} myTeam={teamShortName} />}
       {isSelected && <Check className="h-4 w-4 shrink-0" style={{ color: checkColor }} />}
     </button>
   )

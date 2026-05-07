@@ -11,6 +11,7 @@ import {
   getEffectiveCategory,
 } from '@/fantasy/dream11Rules'
 import { playerImageUrl } from '@/api/client'
+import { shortPlayerName } from '@/lib/utils'
 import { getTeamChipStyles, getTeamSelectedStyles, getTeamCheckColor, getTeamDotStyle } from '@/fantasy/teamColors'
 import { useMatches, useMatch, useCreateTeam } from '@/hooks/useQueries'
 import { useTeamDraft } from './useTeamDraft'
@@ -124,7 +125,7 @@ export function CreateTeamWizard({ matchId, action, onClose }: CreateTeamWizardP
                 alt=""
               />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{p.name}</p>
+                <p className="text-sm font-medium truncate" title={p.name}>{shortPlayerName(p.name)}</p>
                 <p className="text-[10px] text-muted-foreground">{p.team?.teamSName} · {normalizeRole(p.type)}</p>
               </div>
               <span className="text-[10px] text-amber-500 font-medium shrink-0">Bench</span>
@@ -542,8 +543,8 @@ function DesktopCreateTeam({
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{p.name}</p>
-          <div className="flex items-center gap-1.5 mt-0.5">
+          <p className="text-sm font-medium truncate" title={p.name}>{shortPlayerName(p.name)}</p>
+          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
             <span className="text-[11px] text-muted-foreground">{role}</span>
             {isSmartXI && (
               <span className="inline-flex items-center gap-0.5 rounded-md border border-gold/40 bg-gold/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-gold">
@@ -551,14 +552,25 @@ function DesktopCreateTeam({
                 Smart XI
               </span>
             )}
+            {on && (
+              <LastMatchScores
+                stats={
+                  getEffectiveCategory(p, isAnnounced) !== 'bench' ? playerStats?.[p.id] : undefined
+                }
+                myTeam={teamShortName}
+                variant="inline"
+              />
+            )}
           </div>
         </div>
-        <LastMatchScores
-          stats={
-            getEffectiveCategory(p, isAnnounced) !== 'bench' ? playerStats?.[p.id] : undefined
-          }
-          myTeam={teamShortName}
-        />
+        {!on && (
+          <LastMatchScores
+            stats={
+              getEffectiveCategory(p, isAnnounced) !== 'bench' ? playerStats?.[p.id] : undefined
+            }
+            myTeam={teamShortName}
+          />
+        )}
         {on && <Check className="h-4 w-4 shrink-0" style={{ color: checkColor }} />}
       </button>
     )
