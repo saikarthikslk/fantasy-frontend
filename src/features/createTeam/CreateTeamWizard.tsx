@@ -756,13 +756,13 @@ function DesktopCreateTeam({
               {captainId && (
                 <div className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-gold/10 border border-gold/20 shrink-0">
                   <span className="text-[8px] font-bold text-gold tracking-tight">C</span>
-                  <span className="text-[10px] text-gold/95 font-semibold tracking-wide truncate max-w-[60px]">{byId.get(captainId)?.name?.split(' ').at(-1) ?? '—'}</span>
+                  <span className="text-[10px] text-gold/95 font-semibold tracking-wide truncate max-w-[60px]">{shortPlayerName(byId.get(captainId)?.name, 0) || '—'}</span>
                 </div>
               )}
               {viceCaptainId && (
                 <div className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-primary/8 border border-primary/15 shrink-0">
                   <span className="text-[8px] font-bold text-primary tracking-tight">VC</span>
-                  <span className="text-[10px] text-primary/95 font-semibold tracking-wide truncate max-w-[60px]">{byId.get(viceCaptainId)?.name?.split(' ').at(-1) ?? '—'}</span>
+                  <span className="text-[10px] text-primary/95 font-semibold tracking-wide truncate max-w-[60px]">{shortPlayerName(byId.get(viceCaptainId)?.name, 0) || '—'}</span>
                 </div>
               )}
             </div>
@@ -825,7 +825,7 @@ function DesktopCreateTeam({
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1">
-                      <span className={`text-[12px] truncate ${isCap || isVc ? 'font-semibold' : 'font-medium'}`}>{p.name}</span>
+                      <span className={`text-[12px] truncate ${isCap || isVc ? 'font-semibold' : 'font-medium'}`} title={p.name}>{shortPlayerName(p.name)}</span>
                       {isSmartXI && <Sparkles className="h-2.5 w-2.5 shrink-0 fill-gold text-gold" />}
                     </div>
                     <span className="text-[9px] text-muted-foreground/60 uppercase tracking-wider font-medium">

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { playerImageUrl } from "@/api/client";
 import { getTeamBrandColor } from "@/fantasy/teamColors";
-import { cn } from "@/lib/utils";
+import { cn, shortPlayerName } from "@/lib/utils";
 
 interface Player {
   playerid: string;
@@ -76,8 +76,11 @@ function PlayerCard({ player }: { player: Player }) {
       </div>
 
       {/* Name */}
-      <p className="text-[11px] font-medium text-foreground/90 max-w-[72px] truncate leading-tight">
-        {player.name.split(" ").slice(-1)[0]}
+      <p
+        className="text-[11px] font-medium text-foreground/90 max-w-[72px] truncate leading-tight"
+        title={player.name}
+      >
+        {shortPlayerName(player.name, 0)}
       </p>
 
       {/* Points */}

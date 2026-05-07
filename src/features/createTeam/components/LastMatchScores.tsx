@@ -104,12 +104,11 @@ function opponentOf(stat: PlayerMatchStat, myTeam: string | undefined): string {
 }
 
 function buildPoints(stats: PlayerMatchStat[], myTeam: string | undefined): Point[] {
-  // pos: lower = more recent (existing project convention).
-  // Take 5 lowest-pos rows = 5 most recent, then reverse so timeline reads oldest → newest L-to-R.
+  // pos: lower = older, higher = more recent (per PlayerMatchStat type).
+  // Take 5 highest-pos rows = 5 most recent, in ascending order so timeline reads oldest → newest L-to-R.
   return [...stats]
-    .sort((a, b) => (a.pos ?? 0) - (b.pos ?? 0))
-    .slice(0, 5)
     .reverse()
+    .slice(-5)
     .map((s) => ({
       opp: opponentOf(s, myTeam),
       total: (s.score ?? 0) + (s.scoregiven ?? 0),
@@ -355,7 +354,7 @@ export function LastMatchScores({ stats, myTeam, variant = 'compact' }: LastMatc
         />
       </div>
       {/* Desktop */}
-      <div className="hidden px-1 sm:block relative w-[224px] h-[68px] rounded-xl border border-border/60 bg-linear-to-b from-card to-background overflow-hidden">
+      <div className="hidden px-1 sm:block relative w-[240px] h-[68px] rounded-xl border border-border/60 bg-linear-to-b from-card to-background overflow-hidden">
         <SparklineCard
           points={points}
           values={values}
