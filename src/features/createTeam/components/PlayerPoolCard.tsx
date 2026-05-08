@@ -1,7 +1,12 @@
 import { Check, Sparkles } from 'lucide-react'
 import { playerImageUrl } from '@/api/client'
 import { normalizeRole } from '@/fantasy/dream11Rules'
-import { getTeamChipStyles, getTeamSelectedStyles, getTeamCheckColor } from '@/fantasy/teamColors'
+import {
+  getTeamChipStyles,
+  getTeamSelectedStyles,
+  getTeamCheckBadgeStyles,
+  getTeamDisplayColor,
+} from '@/fantasy/teamColors'
 import { cn, shortPlayerName } from '@/lib/utils'
 import type { ApiPlayer, PlayerMatchStat } from '@/types/api'
 import { LastMatchScores } from './LastMatchScores'
@@ -19,10 +24,11 @@ export function PlayerPoolCard({ player, isSelected, isDisabled, onClick, isSmar
   const role = normalizeRole(player.type)
   const teamShortName = player.team?.teamSName || player.team?.teamName || ''
 
-  // Get team brand colors
+  // Team-color chrome
   const chipStyles = getTeamChipStyles(player.team?.teamSName)
-  const selectedStyles = isSelected ? getTeamSelectedStyles(player.team?.teamSName) : {}
-  const checkColor = getTeamCheckColor(player.team?.teamSName)
+  const selectedStyles = isSelected ? getTeamSelectedStyles(player.team?.teamSName) : undefined
+  const checkBadgeStyles = isSelected ? getTeamCheckBadgeStyles(player.team?.teamSName) : undefined
+  const displayColor = isSelected ? getTeamDisplayColor(player.team?.teamSName) : undefined
 
   return (
     <button
@@ -30,7 +36,7 @@ export function PlayerPoolCard({ player, isSelected, isDisabled, onClick, isSmar
       onClick={onClick}
       disabled={isDisabled}
       className={cn(
-        'flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl border transition-all cursor-pointer',
+        'flex items-center min-h-[92px] gap-3 w-full text-left py-2 px-3 rounded-xl border transition-all cursor-pointer',
         isSelected
           ? 'shadow-sm'
           : isDisabled
@@ -60,21 +66,35 @@ export function PlayerPoolCard({ player, isSelected, isDisabled, onClick, isSmar
 
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate" title={player.name}>{shortPlayerName(player.name)}</p>
-        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-          <span className="text-[11px] text-muted-foreground">{role}</span>
+        <div className="flex items-center gap-1.5 mt-0.5 flex-nowrap">
+          <span
+            className={cn('text-[11px]', !isSelected && 'text-muted-foreground')}
+            style={isSelected ? { color: `${displayColor}d9` } : undefined}
+          >
+            {role}
+          </span>
           {isSmartXI && (
-            <span className="inline-flex items-center gap-0.5 rounded-md border border-gold/40 bg-gold/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-gold">
+            <span className="inline-flex text-nowrap items-center gap-0.5 rounded-md border border-gold/40 bg-gold/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-gold">
               <Sparkles className="h-2.5 w-2.5 fill-gold" />
               Smart XI
             </span>
           )}
-          {isSelected && (
-            <LastMatchScores stats={recentStats} myTeam={teamShortName} variant="inline" />
-          )}
         </div>
       </div>
-      {!isSelected && <LastMatchScores stats={recentStats} myTeam={teamShortName} />}
-      {isSelected && <Check className="h-4 w-4 shrink-0" style={{ color: checkColor }} />}
+      {isSelected ? (
+        <>
+          <LastMatchScores stats={recentStats} myTeam={teamShortName} variant="inline" />
+          <span
+            className="inline-flex h-5 w-5 items-center justify-center rounded-full shrink-0"
+            style={checkBadgeStyles}
+            aria-hidden
+          >
+            <Check className="h-3 w-3" strokeWidth={2} />
+          </span>
+        </>
+      ) : (
+        <LastMatchScores stats={recentStats} myTeam={teamShortName} />
+      )}
     </button>
   )
 }

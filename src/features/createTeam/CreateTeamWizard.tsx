@@ -11,8 +11,14 @@ import {
   getEffectiveCategory,
 } from '@/fantasy/dream11Rules'
 import { playerImageUrl } from '@/api/client'
-import { shortPlayerName } from '@/lib/utils'
-import { getTeamChipStyles, getTeamSelectedStyles, getTeamCheckColor, getTeamDotStyle } from '@/fantasy/teamColors'
+import { cn, shortPlayerName } from '@/lib/utils'
+import {
+  getTeamChipStyles,
+  getTeamSelectedStyles,
+  getTeamCheckBadgeStyles,
+  getTeamDisplayColor,
+  getTeamDotStyle,
+} from '@/fantasy/teamColors'
 import { useMatches, useMatch, useCreateTeam } from '@/hooks/useQueries'
 import { useTeamDraft } from './useTeamDraft'
 import { useHydrateEdit } from './useHydrateEdit'
@@ -513,10 +519,11 @@ function DesktopCreateTeam({
     const teamShortName = p.team?.teamSName || p.team?.teamName || ''
     const isSmartXI = smartXIIds.has(String(p.id))
 
-    // Get team brand colors
+    // Team-color chrome
     const chipStyles = getTeamChipStyles(p.team?.teamSName)
-    const selectedStyles = on ? getTeamSelectedStyles(p.team?.teamSName) : {}
-    const checkColor = getTeamCheckColor(p.team?.teamSName)
+    const selectedStyles = on ? getTeamSelectedStyles(p.team?.teamSName) : undefined
+    const checkBadgeStyles = on ? getTeamCheckBadgeStyles(p.team?.teamSName) : undefined
+    const displayColor = on ? getTeamDisplayColor(p.team?.teamSName) : undefined
 
     return (
       <button
@@ -545,7 +552,12 @@ function DesktopCreateTeam({
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate" title={p.name}>{shortPlayerName(p.name)}</p>
           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-            <span className="text-[11px] text-muted-foreground">{role}</span>
+            <span
+              className={cn('text-[11px]', !on && 'text-muted-foreground')}
+              style={on ? { color: `${displayColor}d9` } : undefined}
+            >
+              {role}
+            </span>
             {isSmartXI && (
               <span className="inline-flex items-center gap-0.5 rounded-md border border-gold/40 bg-gold/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wider text-gold">
                 <Sparkles className="h-2.5 w-2.5 fill-gold" />
@@ -571,7 +583,15 @@ function DesktopCreateTeam({
             myTeam={teamShortName}
           />
         )}
-        {on && <Check className="h-4 w-4 shrink-0" style={{ color: checkColor }} />}
+        {on && (
+          <span
+            className="inline-flex h-5 w-5 items-center justify-center rounded-full shrink-0"
+            style={checkBadgeStyles}
+            aria-hidden
+          >
+            <Check className="h-3 w-3" strokeWidth={3} />
+          </span>
+        )}
       </button>
     )
   }

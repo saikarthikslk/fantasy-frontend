@@ -1,4 +1,4 @@
-import { withOpacity, adjustForDarkBackground, getContrastText } from './colorUtils'
+import { adjustForDarkBackground, getContrastText, getDisplayColor } from './colorUtils'
 
 /** Official IPL team brand colors */
 export const TEAM_COLORS = {
@@ -32,6 +32,11 @@ export function getTeamBrandColor(teamShortName: string | undefined | null): str
   return TEAM_COLORS[teamShortName.toUpperCase() as TeamShortName] ?? FALLBACK_COLOR
 }
 
+/** Get a luminance-tuned brand color reliably visible on the dark UI */
+export function getTeamDisplayColor(teamShortName: string | undefined | null): string {
+  return getDisplayColor(getTeamBrandColor(teamShortName))
+}
+
 /** Legacy: Get team color styles (using specific helpers) */
 export function getTeamColors(teamShortName: string | undefined | null): TeamColorStyle {
   const color = getTeamBrandColor(teamShortName)
@@ -53,18 +58,23 @@ export function getTeamChipStyles(teamShortName: string | undefined | null) {
   }
 }
 
-/** Get selected card styles with team color and opacity */
+/** Get selected card styles: 1.5px solid display-color border + gradient tint */
 export function getTeamSelectedStyles(teamShortName: string | undefined | null) {
-  const color = getTeamBrandColor(teamShortName)
+  const color = getTeamDisplayColor(teamShortName)
   return {
-    borderColor: withOpacity(color, 0.3),
-    backgroundColor: withOpacity(color, 0.08),
+    border: `1px solid ${color}`,
+    background: `linear-gradient(90deg, ${color}38, ${color}18)`,
   }
 }
 
-/** Get check icon color */
-export const getTeamCheckColor = (teamShortName: string | undefined | null) =>
-  getTeamBrandColor(teamShortName)
+/** Get check badge styles: filled circle in display color with auto-contrast stroke */
+export function getTeamCheckBadgeStyles(teamShortName: string | undefined | null) {
+  const bg = getTeamDisplayColor(teamShortName)
+  return {
+    backgroundColor: bg,
+    color: getContrastText(bg),
+  }
+}
 
 /** Get dot/indicator background style */
 export const getTeamDotStyle = (teamShortName: string | undefined | null) => ({

@@ -47,3 +47,29 @@ export const adjustForDarkBackground = (hex: string): string => {
  */
 export const getContrastText = (backgroundHex: string): '#000000' | '#FFFFFF' =>
   calculateLuminance(backgroundHex) > 0.5 ? '#000000' : '#FFFFFF'
+
+/**
+ * Saturated fallback for very pale brand colors (luminance > 0.7) that would
+ * disappear into dark UI even after lightening. Currently only PBKS (#D8D8D8)
+ * hits this branch — red is brand-adjacent (PBKS kit uses red ink).
+ */
+export const PALE_FALLBACK = '#ed5e5e'
+
+/**
+ * Returns a hex color reliably visible on the app's dark background
+ * (oklch(0.07 0 0)). Used for selected-state chrome (border, gradient,
+ * check badge). Distinct from `adjustForDarkBackground`, which is tuned
+ * for text contrast and lifts less aggressively.
+ *   lum < 0.18 → lift 50% toward white (DC, KKR, GT)
+ *   lum > 0.70 → PALE_FALLBACK (PBKS)
+ *   else       → lift 12% toward white
+ */
+export const getDisplayColor = (hex: string): string => {
+  const luminance = calculateLuminance(hex)
+  if (luminance > 0.70) return PALE_FALLBACK
+  const lift = luminance < 0.18 ? 0.5 : 0.12
+  const rgb = hexToRgb(hex).map(channel =>
+    Math.min(255, Math.round(channel + (255 - channel) * lift))
+  )
+  return `#${rgb.map(c => c.toString(16).padStart(2, '0')).join('')}`
+}
