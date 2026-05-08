@@ -1,6 +1,13 @@
-import { useId } from 'react'
 import { cn } from '@/lib/utils'
 import type { PlayerMatchStat } from '@/types/api'
+import {
+  Sparkline,
+  SPARKLINE_SIZE_SM,
+  SPARKLINE_SIZE_LG,
+  SPARKLINE_SIZE_INLINE,
+  type SparklinePoint,
+  type SparklineForm,
+} from '@/components/ui/Sparkline'
 
 interface LastMatchScoresProps {
   stats: PlayerMatchStat[] | undefined
@@ -9,91 +16,19 @@ interface LastMatchScoresProps {
   variant?: 'compact' | 'inline'
 }
 
-type Form = 'hot' | 'up' | 'cold' | 'steady'
-
-interface Point {
-  opp: string
-  total: number
-}
-
-const FORM_LINE_COLOR: Record<Form, string> = {
-  hot: 'oklch(0.85 0.18 85)',
-  up: 'oklch(0.78 0.17 145)',
-  cold: 'oklch(0.7 0.18 25)',
-  steady: 'oklch(0.6 0 0)',
-}
-
-const FORM_LAST_FILL: Record<Form, string> = {
-  hot: 'oklch(0.85 0.18 85)',
-  up: 'oklch(0.78 0.17 145)',
-  cold: 'oklch(0.7 0.18 25)',
-  steady: 'oklch(0.85 0 0)',
-}
-
-const FORM_TONE: Record<Form, string> = {
+const FORM_TONE: Record<SparklineForm, string> = {
   hot: 'text-gold',
   up: 'text-emerald-400',
   cold: 'text-rose-400',
   steady: 'text-muted-foreground',
 }
 
-const FORM_ARROW: Record<Form, string> = {
-  hot: '▲',
-  up: '▲',
-  cold: '▼',
-  steady: '→',
+const FORM_ARROW: Record<SparklineForm, string> = {
+  hot: '▲', up: '▲', cold: '▼', steady: '→',
 }
 
-const FORM_LABEL: Record<Form, string> = {
-  hot: 'Hot Form',
-  up: 'Up',
-  cold: 'Cold',
-  steady: 'Steady',
-}
-
-interface SizeSpec {
-  w: number
-  h: number
-  padX: number
-  yTop: number
-  yBottom: number
-  numbersY: number
-  labelsY: number | null
-  dotR: number
-  dotRLast: number
-  lineWidth: number
-  numFont: number
-  labelFont: number
-}
-
-const SM: SizeSpec = {
-  w: 140,
-  h: 60,
-  padX: 8,
-  yTop: 4,
-  yBottom: 30,
-  numbersY: 41,
-  labelsY: 53,
-  dotR: 2.3,
-  dotRLast: 3.2,
-  lineWidth: 1.6,
-  numFont: 9,
-  labelFont: 7,
-}
-
-const LG: SizeSpec = {
-  w: 224,
-  h: 68,
-  padX: 12,
-  yTop: 8,
-  yBottom: 42,
-  numbersY: 54,
-  labelsY: 63,
-  dotR: 2.6,
-  dotRLast: 3.6,
-  lineWidth: 1.8,
-  numFont: 9.5,
-  labelFont: 7.5,
+const FORM_LABEL: Record<SparklineForm, string> = {
+  hot: 'Hot Form', up: 'Up', cold: 'Cold', steady: 'Steady',
 }
 
 function opponentOf(stat: PlayerMatchStat, myTeam: string | undefined): string {
@@ -103,9 +38,7 @@ function opponentOf(stat: PlayerMatchStat, myTeam: string | undefined): string {
   return (t1 === myTeam ? t2 : t1) || '—'
 }
 
-function buildPoints(stats: PlayerMatchStat[], myTeam: string | undefined): Point[] {
-  // pos: lower = older, higher = more recent (per PlayerMatchStat type).
-  // Take 5 highest-pos rows = 5 most recent, in ascending order so timeline reads oldest → newest L-to-R.
+function buildPoints(stats: PlayerMatchStat[], myTeam: string | undefined): SparklinePoint[] {
   return [...stats]
     .reverse()
     .slice(-5)
@@ -115,7 +48,7 @@ function buildPoints(stats: PlayerMatchStat[], myTeam: string | undefined): Poin
     }))
 }
 
-function classifyForm(values: number[]): Form {
+function classifyForm(values: number[]): SparklineForm {
   if (values.length < 2) return 'steady'
   const first = values[0]
   const last = values[values.length - 1]
@@ -126,131 +59,7 @@ function classifyForm(values: number[]): Form {
   return 'steady'
 }
 
-function computePositions(values: number[], spec: SizeSpec): { x: number; y: number }[] {
-  const plotW = spec.w - 2 * spec.padX
-  const plotH = spec.yBottom - spec.yTop
-  const max = Math.max(...values)
-  const min = Math.min(...values)
-  const range = max - min || 1
-  const flat = range === 1 && max === min
-  return values.map((v, i) => {
-    const x =
-      values.length === 1 ? spec.w / 2 : spec.padX + (i / (values.length - 1)) * plotW
-    const y = flat ? (spec.yTop + spec.yBottom) / 2 : spec.yBottom - ((v - min) / range) * plotH
-    return { x, y }
-  })
-}
-
-function buildLinePath(positions: { x: number; y: number }[]): string {
-  if (positions.length < 2) return ''
-  return positions.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ')
-}
-
-interface SparklineCardProps {
-  points: Point[]
-  values: number[]
-  form: Form
-  spec: SizeSpec
-  gradientId: string
-}
-
-function SparklineCard({ points, values, form, spec, gradientId }: SparklineCardProps) {
-  const positions = computePositions(values, spec)
-  const linePath = buildLinePath(positions)
-  const areaPath =
-    linePath && positions.length >= 2
-      ? `${linePath} L ${positions[positions.length - 1].x},${spec.yBottom} L ${positions[0].x},${spec.yBottom} Z`
-      : ''
-  const lineColor = FORM_LINE_COLOR[form]
-
-  return (
-    <svg
-      viewBox={`0 0 ${spec.w} ${spec.h}`}
-      width="100%"
-      height="100%"
-      className="block"
-      aria-hidden
-    >
-      <defs>
-        <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor={lineColor} stopOpacity="0.42" />
-          <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {areaPath && <path d={areaPath} fill={`url(#${gradientId})`} />}
-      {linePath && (
-        <path
-          d={linePath}
-          stroke={lineColor}
-          strokeWidth={spec.lineWidth}
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      )}
-      {positions.map((pos, i) => {
-        const isLast = i === positions.length - 1
-        return (
-          <circle
-            key={i}
-            cx={pos.x}
-            cy={pos.y}
-            r={isLast ? spec.dotRLast : spec.dotR}
-            fill={lineColor}
-            stroke="oklch(0.07 0 0)"
-            strokeWidth={isLast ? 0 : 1.2}
-          >
-            <title>{`vs ${points[i].opp} — ${points[i].total} pts`}</title>
-          </circle>
-        )
-      })}
-      <g
-        fontFamily="Inter, system-ui"
-        fontWeight={800}
-        fontSize={spec.numFont}
-        style={{ fontVariantNumeric: 'tabular-nums' }}
-      >
-        {positions.map((pos, i) => {
-          const isLast = i === positions.length - 1
-          return (
-            <text
-              key={i}
-              x={pos.x}
-              y={spec.numbersY}
-              textAnchor="middle"
-              fill={isLast ? FORM_LAST_FILL[form] : 'oklch(0.7 0 0)'}
-            >
-              {points[i].total}
-            </text>
-          )
-        })}
-      </g>
-      {spec.labelsY !== null && positions.length >= 2 && (
-        <g
-          fontFamily="Inter, system-ui"
-          fontWeight={700}
-          fontSize={spec.labelFont}
-          letterSpacing={0.5}
-        >
-          <text x={positions[0].x} y={spec.labelsY} textAnchor="middle" fill="oklch(0.42 0 0)">
-            vs {points[0].opp}
-          </text>
-          <text
-            x={positions[positions.length - 1].x}
-            y={spec.labelsY}
-            textAnchor="middle"
-            fill="oklch(0.42 0 0)"
-          >
-            vs {points[points.length - 1].opp}
-          </text>
-        </g>
-      )}
-    </svg>
-  )
-}
-
 export function LastMatchScores({ stats, myTeam, variant = 'compact' }: LastMatchScoresProps) {
-  const baseId = useId()
   if (!stats || stats.length === 0) return null
   const points = buildPoints(stats, myTeam)
   if (points.length === 0) return null
@@ -260,67 +69,23 @@ export function LastMatchScores({ stats, myTeam, variant = 'compact' }: LastMatc
   const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length)
 
   if (variant === 'inline') {
-    const w = 56
-    const h = 14
-    const positions = computePositions(values, {
-      w,
-      h,
-      padX: 4,
-      yTop: 2,
-      yBottom: 12,
-      numbersY: 0,
-      labelsY: null,
-      dotR: 1.6,
-      dotRLast: 2,
-      lineWidth: 1.4,
-      numFont: 0,
-      labelFont: 0,
-    })
-    const linePath = buildLinePath(positions)
-    const lineColor = FORM_LINE_COLOR[form]
-
     return (
       <span
         className="inline-flex items-center gap-1.5 h-[22px] pl-2 pr-2.5 rounded-full bg-card/60 border border-border/60"
         title={`${FORM_LABEL[form]} · vs ${last.opp} — ${last.total} pts`}
         aria-label={`Last ${points.length} matches, ${FORM_LABEL[form]}, latest ${last.total} points vs ${last.opp}`}
       >
-        <svg
-          width={w}
-          height={h}
-          viewBox={`0 0 ${w} ${h}`}
-          className="block shrink-0"
-          aria-hidden
-        >
-          {linePath && (
-            <path
-              d={linePath}
-              stroke={lineColor}
-              strokeWidth={1.4}
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          )}
-          {positions.map((pos, i) => {
-            const isLast = i === positions.length - 1
-            return (
-              <circle
-                key={i}
-                cx={pos.x}
-                cy={pos.y}
-                r={isLast ? 2 : 1.6}
-                fill={lineColor}
-              />
-            )
-          })}
-        </svg>
-        <span
-          className={cn(
-            'text-[11px] font-extrabold tabular-nums leading-none -tracking-[0.02em]',
-            FORM_TONE[form],
-          )}
-        >
+        <span className="block shrink-0" style={{ width: 56, height: 14 }}>
+          <Sparkline
+            points={points}
+            form={form}
+            size={SPARKLINE_SIZE_INLINE}
+            fillArea={false}
+            showNumbers={false}
+            showOppLabels={false}
+          />
+        </span>
+        <span className={cn('text-[11px] font-extrabold tabular-nums leading-none -tracking-[0.02em]', FORM_TONE[form])}>
           {FORM_ARROW[form]} {last.total}
         </span>
         <span className="text-[8px] font-bold uppercase tracking-wider leading-none text-muted-foreground/70">
@@ -345,23 +110,11 @@ export function LastMatchScores({ stats, myTeam, variant = 'compact' }: LastMatc
       </span>
       {/* Mobile */}
       <div className="block sm:hidden px-1 relative w-[160px] h-[60px] rounded-lg border border-border/60 bg-linear-to-b from-card to-background overflow-hidden">
-        <SparklineCard
-          points={points}
-          values={values}
-          form={form}
-          spec={SM}
-          gradientId={`${baseId}-sm`}
-        />
+        <Sparkline points={points} form={form} size={SPARKLINE_SIZE_SM} />
       </div>
       {/* Desktop */}
       <div className="hidden px-1 sm:block relative w-[240px] h-[68px] rounded-xl border border-border/60 bg-linear-to-b from-card to-background overflow-hidden">
-        <SparklineCard
-          points={points}
-          values={values}
-          form={form}
-          spec={LG}
-          gradientId={`${baseId}-lg`}
-        />
+        <Sparkline points={points} form={form} size={SPARKLINE_SIZE_LG} />
       </div>
     </div>
   )
