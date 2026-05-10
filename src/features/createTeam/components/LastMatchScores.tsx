@@ -72,8 +72,8 @@ export function LastMatchScores({ stats, myTeam, variant = 'compact' }: LastMatc
     return (
       <span
         className="inline-flex items-center gap-1.5 h-[22px] pl-2 pr-2.5 rounded-full bg-card/60 border border-border/60"
-        title={`${FORM_LABEL[form]} · vs ${last.opp} — ${last.total} pts`}
-        aria-label={`Last ${points.length} matches, ${FORM_LABEL[form]}, latest ${last.total} points vs ${last.opp}`}
+        title={`${FORM_LABEL[form]} · Last ${points.length} avg — ${avg} pts`}
+        aria-label={`Last ${points.length} matches, ${FORM_LABEL[form]}, ${avg} average points`}
       >
         <span className="block shrink-0" style={{ width: 56, height: 14 }}>
           <Sparkline
@@ -86,10 +86,10 @@ export function LastMatchScores({ stats, myTeam, variant = 'compact' }: LastMatc
           />
         </span>
         <span className={cn('text-[11px] font-extrabold tabular-nums leading-none -tracking-[0.02em]', FORM_TONE[form])}>
-          {FORM_ARROW[form]} {last.total}
+          {FORM_ARROW[form]} {avg}
         </span>
         <span className="text-[8px] font-bold uppercase tracking-wider leading-none text-muted-foreground/70">
-          vs {last.opp}
+          Avg pts
         </span>
       </span>
     )
