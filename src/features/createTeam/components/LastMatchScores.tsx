@@ -65,7 +65,6 @@ export function LastMatchScores({ stats, myTeam, variant = 'compact' }: LastMatc
   if (points.length === 0) return null
   const values = points.map((p) => p.total)
   const form = classifyForm(values)
-  const last = points[points.length - 1]
   const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length)
 
   if (variant === 'inline') {
