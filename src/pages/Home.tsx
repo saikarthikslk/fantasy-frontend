@@ -62,20 +62,22 @@ export function Home() {
                 </Button>
               </>
             )}
-            <Button
-              variant="outline"
-              size="lg"
-              className="gap-2"
-              onClick={() => setRulebookOpen(true)}
-            >
-              <BookOpen className="h-4 w-4" />
-              Points Rulebook
-            </Button>
           </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            {token
-              ? "You're signed in — let's pick your XI."
-              : 'Sign in to save your team and compete on the leaderboard.'}
+          <p className="text-sm text-muted-foreground mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+            <span>
+              {token
+                ? "You're signed in — let's pick your XI."
+                : 'Sign in to save your team and compete on the leaderboard.'}
+            </span>
+            <span aria-hidden="true" className="text-muted-foreground/40">·</span>
+            <button
+              type="button"
+              onClick={() => setRulebookOpen(true)}
+              className="inline-flex items-center gap-1 text-foreground hover:text-primary transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring rounded-sm"
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              Points Rulebook
+            </button>
           </p>
         </div>
       </section>
