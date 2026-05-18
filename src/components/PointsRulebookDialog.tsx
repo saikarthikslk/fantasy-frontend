@@ -16,6 +16,8 @@ type Props = {
   onOpenChange: (open: boolean) => void
 }
 
+const remarkPlugins = [remarkGfm]
+
 const markdownComponents: Components = {
   h1: ({ children }) => (
     <h1 className="text-2xl font-bold tracking-tight text-foreground mt-0 mb-3">
@@ -98,7 +100,7 @@ export function PointsRulebookDialog({ open, onOpenChange }: Props) {
           </DialogDescription>
         </DialogHeader>
         <div className="overflow-y-auto px-6 py-5">
-          <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkGfm]}>
+          <ReactMarkdown components={markdownComponents} remarkPlugins={remarkPlugins}>
             {rulebookMd}
           </ReactMarkdown>
         </div>
