@@ -1,5 +1,6 @@
 import type { Components } from 'react-markdown'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { BookOpen } from 'lucide-react'
 import {
   Dialog,
@@ -53,7 +54,11 @@ const markdownComponents: Components = {
   em: ({ children }) => <em className="italic text-muted-foreground">{children}</em>,
   hr: () => <hr className="border-border my-5" />,
   table: ({ children }) => (
-    <div className="my-4 overflow-x-auto rounded-lg border border-border">
+    <div
+      className="my-4 overflow-x-auto rounded-lg border border-border"
+      role="region"
+      aria-label="Scoring table"
+    >
       <table className="w-full text-sm">{children}</table>
     </div>
   ),
@@ -92,8 +97,8 @@ export function PointsRulebookDialog({ open, onOpenChange }: Props) {
             How players earn points in every match.
           </DialogDescription>
         </DialogHeader>
-        <div className="overflow-y-auto px-6 py-5 scrollbar-thin">
-          <ReactMarkdown components={markdownComponents}>
+        <div className="overflow-y-auto px-6 py-5">
+          <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkGfm]}>
             {rulebookMd}
           </ReactMarkdown>
         </div>
