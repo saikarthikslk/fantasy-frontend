@@ -25,7 +25,7 @@ const markdownComponents: Components = {
     </h1>
   ),
   h2: ({ children }) => (
-    <h2 className="text-lg font-semibold tracking-tight text-foreground mt-6 mb-2">
+    <h2 className="text-lg font-semibold tracking-tight text-foreground mt-0 mb-2">
       {children}
     </h2>
   ),

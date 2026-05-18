@@ -40,11 +40,11 @@ export function RootLayout() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col overflow-hidden bg-background">
       <TokenCapture setroot={settoken1} />
 
       {/* Top bar */}
-      <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-lg">
+      <header className="shrink-0 z-40 border-b bg-background/80 backdrop-blur-lg">
         <div className="container flex h-14 items-center justify-between">
 
           {/* Brand */}
@@ -151,20 +151,22 @@ export function RootLayout() {
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="flex-1">
-        <Outlet />
-      </main>
+      {/* Scrollable area below header */}
+      <div className="flex-1 overflow-y-auto flex flex-col">
+        <main className="flex-1">
+          <Outlet />
+        </main>
 
-      {/* Footer — only shown when logged out */}
-      {!token && (
-        <footer className="border-t py-6">
-          <div className="container flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-            <p>ApnaXI — Cricket fantasy dream teams</p>
-            <p className="text-muted-foreground/60">Built with passion for cricket</p>
-          </div>
-        </footer>
-      )}
+        {/* Footer — only shown when logged out */}
+        {!token && (
+          <footer className="border-t py-6">
+            <div className="container flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
+              <p>ApnaXI — Cricket fantasy dream teams</p>
+              <p className="text-muted-foreground/60">Built with passion for cricket</p>
+            </div>
+          </footer>
+        )}
+      </div>
 
       {/* Keyboard UI — portals to body */}
       <CommandMenu />
