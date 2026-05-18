@@ -96,7 +96,7 @@ export function PointsRulebookDialog({ open, onOpenChange }: Props) {
             Points Rulebook
           </DialogTitle>
           <DialogDescription>
-            How players earn points in every match.
+            Scoring rules for IPL T20 fantasy.
           </DialogDescription>
         </DialogHeader>
         <div className="overflow-y-auto px-6 py-5">

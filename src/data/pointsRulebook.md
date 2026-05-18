@@ -1,6 +1,4 @@
-# Points Rulebook
-
-How players earn fantasy points in every IPL T20 match. Captain (C) scores **2×** and Vice-Captain (VC) scores **1.5×** on all points below.
+Captain (C) scores **2×** and Vice-Captain (VC) scores **1.5×** on all points below.
 
 ---
 
