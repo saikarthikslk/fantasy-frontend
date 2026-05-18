@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { AlertCircle, Sparkles, LayoutGrid, List } from "lucide-react";
+import { getTeamBrandColor } from "@/fantasy/teamColors";
 import {
   Tooltip,
   TooltipProvider,
@@ -50,22 +51,20 @@ function groupByRole(players, captainId, vcId) {
   return groups;
 }
 
-function PlayerRow({ player }) {
+function PlayerRow({ player, isLive }) {
   const [imgErr, setImgErr] = useState(false);
   const initials = player.name?.split(" ").map((w) => w[0]).slice(0, 2).join("") || "?";
+  const teamColor = getTeamBrandColor(player.team);
 
   return (
-    <div className="flex items-center gap-3 py-2">
-      {/* Avatar */}
+    <div className="group flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-card/60 transition-colors">
+      {/* Avatar with team-color ring */}
       <div className="relative shrink-0">
         <div
-          className={`h-9 w-9 rounded-full overflow-hidden flex items-center justify-center bg-muted ${
-            player.isCaptain
-              ? "ring-2 ring-gold"
-              : player.isViceCaptain
-              ? "ring-2 ring-primary"
-              : "ring-1 ring-border"
-          }`}
+          className="h-10 w-10 rounded-full overflow-hidden bg-muted flex items-center justify-center"
+          style={{
+            boxShadow: `0 0 0 2px ${teamColor}, 0 0 0 4px var(--color-background)`,
+          }}
         >
           {player.url && !imgErr ? (
             <img
@@ -75,12 +74,12 @@ function PlayerRow({ player }) {
               className="w-full h-full object-cover"
             />
           ) : (
-            <span className="text-xs font-bold">{initials}</span>
+            <span className="text-xs font-bold text-foreground/85">{initials}</span>
           )}
         </div>
         {(player.isCaptain || player.isViceCaptain) && (
           <div
-            className={`absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full text-[8px] font-extrabold flex items-center justify-center ${
+            className={`absolute -top-1 -right-1 h-[18px] min-w-[18px] px-1 rounded-full text-[9px] font-extrabold flex items-center justify-center ring-2 ring-background ${
               player.isCaptain ? "bg-gold text-black" : "bg-primary text-primary-foreground"
             }`}
           >
@@ -91,35 +90,52 @@ function PlayerRow({ player }) {
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{player.name}</p>
+        <p className="text-sm font-medium truncate text-foreground/95">{player.name}</p>
         {player.team && (
-          <p className="text-[11px] text-muted-foreground">{player.team}</p>
+          <p className="text-[11px] font-medium tracking-wide" style={{ color: teamColor }}>
+            {player.team}
+          </p>
         )}
       </div>
 
-      {/* Points */}
-      <span className="text-sm font-semibold tabular-nums shrink-0">
-        {player.points != null ? player.points.toFixed(1) : "—"}
-      </span>
+      {/* Points — live only */}
+      {isLive && (
+        <div className="flex items-baseline gap-1 shrink-0 tabular-nums">
+          <span className="text-base font-bold text-foreground">
+            {player.points != null ? player.points.toFixed(1) : "—"}
+          </span>
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">pts</span>
+        </div>
+      )}
     </div>
   );
 }
 
-function RoleGroup({ role, players }) {
+function RoleGroup({ role, players, isLive }) {
   if (!players?.length) return null;
   return (
     <div>
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+      {/* Centered hairline header — matches grid-view aesthetic */}
+      <div className="flex items-center gap-3 mb-2 px-1">
+        <span
+          className="h-px flex-1"
+          style={{
+            background: "linear-gradient(90deg, transparent, var(--color-border) 60%)",
+          }}
+        />
+        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
           {ROLE_LABELS[role]}
         </span>
-        <Badge variant="secondary" className="text-[9px] h-4 px-1">
-          {players.length}
-        </Badge>
+        <span
+          className="h-px flex-1"
+          style={{
+            background: "linear-gradient(90deg, var(--color-border) 40%, transparent)",
+          }}
+        />
       </div>
-      <div>
+      <div className="space-y-0.5">
         {players.map((p) => (
-          <PlayerRow key={p.playerid} player={p} />
+          <PlayerRow key={p.playerid} player={p} isLive={isLive} />
         ))}
       </div>
     </div>
@@ -133,9 +149,10 @@ interface TeamPreviewProps {
   teamNames?: Record<string, string>;
   rank?: number | null;
   totalPlayers?: number | null;
+  isLive?: boolean;
 }
 
-export default function TeamPreview({ matchId, dreamId, lbEntry = null, teamNames = {}, rank = null, totalPlayers = null }: TeamPreviewProps) {
+export default function TeamPreview({ matchId, dreamId, lbEntry = null, teamNames = {}, rank = null, totalPlayers = null, isLive = false }: TeamPreviewProps) {
   const [data, setData] = useState(lbEntry);
   const [loading, setLoading] = useState(!lbEntry);
   const [error, setError] = useState(null);
@@ -243,8 +260,6 @@ export default function TeamPreview({ matchId, dreamId, lbEntry = null, teamName
   const players = playerEntities.map((p) => ({ ...p, team: resolveTeam(p.team) }));
   const groups = groupByRole(players, captain, vcaptain);
   const totalPoints = players.reduce((sum, p) => sum + (p.points ?? 0), 0);
-  const cap = players.find((p) => String(p.playerid) === String(captain));
-  const vc = players.find((p) => String(p.playerid) === String(vcaptain));
 
   const teamCounts = Object.values(
     players.reduce((acc, p) => {
@@ -258,7 +273,7 @@ export default function TeamPreview({ matchId, dreamId, lbEntry = null, teamName
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className={`p-6 pt-5 shrink-0 ${showPitchView ? 'pb-[4px]' : 'pb-4'}`} data-drag-zone="true">
+      <div className={`p-6 pt-5 shrink-0 pb-4`} data-drag-zone="true">
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
             <p className="text-[11px] text-muted-foreground tracking-wide uppercase">
@@ -284,14 +299,23 @@ export default function TeamPreview({ matchId, dreamId, lbEntry = null, teamName
           )}
         </div>
 
-        {/* Points badge & Pitch View toggle */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold tabular-nums text-foreground leading-none">
-              {totalPoints.toFixed(1)}
-            </span>
-            <span className="text-sm text-muted-foreground">pts</span>
-          </div>
+        {/* Hero — total points (live) or player count (pre-match) + view toggle */}
+        <div className="flex items-center justify-between">
+          {isLive ? (
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold tabular-nums text-foreground leading-none">
+                {totalPoints.toFixed(1)}
+              </span>
+              <span className="text-sm text-muted-foreground">pts</span>
+            </div>
+          ) : (
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold tabular-nums text-foreground leading-none">
+                {playerEntities.length}
+              </span>
+              <span className="text-sm text-muted-foreground">players</span>
+            </div>
+          )}
 
           <ViewToggle
             isActive={showPitchView}
@@ -300,41 +324,6 @@ export default function TeamPreview({ matchId, dreamId, lbEntry = null, teamName
             rightIcon={List}
           />
         </div>
-
-        {/* Captain / VC chips - only show in list view */}
-        {!showPitchView && (
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { label: "C", player: cap, accent: "gold", mult: "2x" },
-              { label: "VC", player: vc, accent: "primary", mult: "1.5x" },
-            ].map(({ label, player, accent, mult }) => (
-              <div
-                key={label}
-                className={`flex items-center gap-2.5 rounded-lg border px-3 py-2.5 ${
-                  accent === "gold"
-                    ? "bg-gold/5 border-gold/20"
-                    : "bg-primary/5 border-primary/20"
-                }`}
-              >
-                <div
-                  className={`h-6 w-6 rounded-full text-[10px] font-extrabold flex items-center justify-center shrink-0 ${
-                    accent === "gold" ? "bg-gold text-black" : "bg-primary text-primary-foreground"
-                  }`}
-                >
-                  {label}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {player?.name ?? "—"}
-                  </p>
-                  <p className={`text-[10px] ${accent === "gold" ? "text-gold/60" : "text-primary/60"}`}>
-                    {mult} points
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       <Separator className="shrink-0" />
@@ -342,12 +331,12 @@ export default function TeamPreview({ matchId, dreamId, lbEntry = null, teamName
       {/* Player list or Pitch view */}
       {showPitchView ? (
         <div className="flex-1 min-h-0 overflow-hidden">
-          <PitchView groups={groups} rank={rank} />
+          <PitchView groups={groups} rank={rank} isLive={isLive} />
         </div>
       ) : (
-        <div className="flex-1 min-h-0 overflow-y-auto p-6 pt-4 space-y-5">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 pt-4 space-y-5">
           {ROLE_ORDER.map((role) => (
-            <RoleGroup key={role} role={role} players={groups[role]} />
+            <RoleGroup key={role} role={role} players={groups[role]} isLive={isLive} />
           ))}
         </div>
       )}
@@ -370,9 +359,14 @@ export default function TeamPreview({ matchId, dreamId, lbEntry = null, teamName
               ))
             )}
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-            Preview only
+          <div className={`flex items-center gap-1.5 text-xs ${isLive ? "text-emerald-400" : "text-muted-foreground"}`}>
+            <span className="relative flex h-1.5 w-1.5">
+              {isLive && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              )}
+              <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${isLive ? "bg-emerald-400" : "bg-primary"}`} />
+            </span>
+            {isLive ? "Live updates" : "Preview only"}
           </div>
         </div>
       </div>

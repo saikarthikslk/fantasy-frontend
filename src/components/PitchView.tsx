@@ -13,35 +13,33 @@ interface Player {
   isViceCaptain?: boolean;
 }
 
+type RoleKey = "WK" | "BAT" | "AR" | "BOWL";
+
 interface PitchViewProps {
-  groups: {
-    WK: Player[];
-    BAT: Player[];
-    AR: Player[];
-    BOWL: Player[];
-  };
+  groups: Record<RoleKey, Player[]>;
   rank?: number | null;
+  isLive?: boolean;
 }
 
-const ROLE_LABELS: Record<keyof PitchViewProps["groups"], string> = {
-  WK: "Wicket-Keepers",
-  BAT: "Batters",
-  AR: "All-Rounders",
-  BOWL: "Bowlers",
+const ROLE_ORDER: RoleKey[] = ["WK", "BAT", "AR", "BOWL"];
+const ROLE_LABELS: Record<RoleKey, string> = {
+  WK: "WK",
+  BAT: "BAT",
+  AR: "AR",
+  BOWL: "BOWL",
 };
 
-function PlayerCard({ player }: { player: Player }) {
+function PlayerToken({ player, isLive }: { player: Player; isLive: boolean }) {
   const [imgErr, setImgErr] = useState(false);
   const initials =
     player.name?.split(" ").map((w) => w[0]).slice(0, 2).join("") || "?";
   const teamColor = getTeamBrandColor(player.team);
 
   return (
-    <div className="flex flex-col items-center gap-1.5 min-w-0 group">
-      <div className="relative">
-        {/* Avatar with team-brand-colored ring (via boxShadow for dynamic colors) */}
+    <div className="ptoken flex flex-col items-center min-w-0 group">
+      <div className="relative shrink-0">
         <div
-          className="h-11 w-11 rounded-full overflow-hidden bg-muted transition-transform duration-200 group-hover:scale-105"
+          className="avatar rounded-full overflow-hidden bg-muted transition-transform duration-200 group-hover:scale-105 flex items-center justify-center"
           style={{
             boxShadow: `0 0 0 2px ${teamColor}, 0 0 0 4px var(--color-background)`,
           }}
@@ -54,17 +52,16 @@ function PlayerCard({ player }: { player: Player }) {
               className="w-full h-full object-cover"
             />
           ) : (
-            <span className="w-full h-full flex items-center justify-center text-[11px] font-bold text-foreground">
+            <span className="initials font-bold text-foreground/85">
               {initials}
             </span>
           )}
         </div>
 
-        {/* Captain / Vice-Captain badge */}
         {(player.isCaptain || player.isViceCaptain) && (
           <div
             className={cn(
-              "absolute -top-1 -right-1 h-[18px] w-[18px] rounded-full text-[9px] font-extrabold flex items-center justify-center ring-2 ring-background shadow-sm",
+              "cv-pill absolute font-extrabold flex items-center justify-center",
               player.isCaptain
                 ? "bg-gold text-black"
                 : "bg-primary text-primary-foreground"
@@ -75,214 +72,128 @@ function PlayerCard({ player }: { player: Player }) {
         )}
       </div>
 
-      {/* Name */}
-      <p
-        className="text-[11px] font-medium text-foreground/90 max-w-[72px] truncate leading-tight"
-        title={player.name}
-      >
+      <p className="pname font-semibold text-foreground/90 truncate leading-tight" title={player.name}>
         {shortPlayerName(player.name, 0)}
       </p>
 
-      {/* Points */}
-      <p className="text-[10px] font-semibold tabular-nums text-muted-foreground leading-none">
-        {player.points != null ? `${player.points.toFixed(0)} pts` : "— pts"}
-      </p>
+      {isLive && (
+        <p className="ppts font-semibold tabular-nums text-muted-foreground leading-none">
+          {player.points != null ? `${player.points.toFixed(0)} pts` : "— pts"}
+        </p>
+      )}
     </div>
   );
 }
 
-function RoleSection({
-  label,
+function RoleRow({
+  role,
   players,
+  isLive,
 }: {
-  label: string;
+  role: RoleKey;
   players: Player[];
+  isLive: boolean;
 }) {
   if (!players.length) return null;
-  return (
-    <div className="flex-1 min-h-0 flex flex-col justify-center gap-2.5">
-      {/* Section header with hairline separators */}
-      <div className="flex items-center gap-2.5">
-        <div className="h-px flex-1 bg-linear-to-r from-transparent to-border" />
-        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          {label}
-        </span>
-        <span className="text-[9px] font-bold tabular-nums text-foreground/30 px-1.5 py-0.5 rounded-full border border-border/60">
-          {players.length}
-        </span>
-        <div className="h-px flex-1 bg-linear-to-l from-transparent to-border" />
-      </div>
+  const lanes = players.length >= 5 ? 2 : 1;
 
-      {/* Players row */}
-      <div className="flex justify-around items-start gap-2 flex-wrap">
-        {players.map((p) => (
-          <PlayerCard key={p.playerid} player={p} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/** Cricket field — stumps with bails, popping + return creases. */
-function Wicket({ position }: { position: "top" | "bottom" }) {
-  const isTop = position === "top";
   return (
     <div
       className={cn(
-        "absolute left-1/2 -translate-x-1/2 pointer-events-none flex flex-col items-center",
-        isTop ? "top-[10.5%]" : "bottom-[10.5%] flex-col-reverse"
+        "role-row flex flex-row items-center min-h-0 gap-2 px-1",
+        lanes === 2 ? "flex-[2_1_0]" : "flex-[1_1_0]"
       )}
-      aria-hidden
     >
-      {/* Popping crease with return crease ticks */}
-      <div className="relative w-[44px] h-px bg-foreground/20">
-        <span className="absolute -left-px top-1/2 -translate-y-1/2 w-px h-2 bg-foreground/15" />
-        <span className="absolute -right-px top-1/2 -translate-y-1/2 w-px h-2 bg-foreground/15" />
-      </div>
-      {/* Bowling crease (closer to stumps) */}
-      <div className={cn("w-[32px] h-px bg-foreground/12", isTop ? "mt-1.5" : "mb-1.5")} />
-      {/* Bails */}
+      <span className="role-label-side shrink-0 text-center font-bold uppercase text-muted-foreground tracking-[0.12em] leading-tight">
+        {ROLE_LABELS[role]}
+      </span>
       <div
         className={cn(
-          "w-3 h-px bg-foreground/30 shadow-[0_0_2px_oklch(0.985_0_0/0.3)]",
-          isTop ? "mt-0.5" : "mb-0.5"
+          "row-players flex-1 flex flex-wrap items-center justify-center content-center min-h-0 px-0.5",
+          lanes === 2 ? "row-players-2" : "row-players-1"
         )}
-      />
-      {/* Stumps */}
-      <div className={cn("flex gap-[3px]", isTop ? "mt-px" : "mb-px")}>
-        <span className="w-px h-2 bg-foreground/35" />
-        <span className="w-px h-2 bg-foreground/35" />
-        <span className="w-px h-2 bg-foreground/35" />
+      >
+        {players.map((p) => (
+          <PlayerToken key={p.playerid} player={p} isLive={isLive} />
+        ))}
       </div>
+      <span className="role-label-side shrink-0 opacity-0 pointer-events-none" aria-hidden>
+        {ROLE_LABELS[role]}
+      </span>
     </div>
   );
 }
 
-/** Cricket-themed backdrop — boundary, 30-yard circle, pitch strip, wickets, vignette. */
-function CricketBackdrop() {
+/** Very subtle cricket-field backdrop — soft green tint, faint pitch strip, atmospheric glow. */
+function SubtleBackdrop() {
   return (
     <>
-      {/* Base radial spotlight — green tint, brightest at top */}
+      {/* Base green wash — gentle, brightest at top center */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 85% 65% at 50% -5%, oklch(0.20 0.05 155) 0%, oklch(0.10 0.02 155) 50%, oklch(0.07 0.01 155) 100%)",
+            "radial-gradient(ellipse 90% 75% at 50% -10%, oklch(0.18 0.07 155) 0%, oklch(0.11 0.03 155) 45%, oklch(0.07 0.01 155) 100%)",
         }}
-      />
-
-      {/* Field markings — outer boundary, inner boundary (dashed), 30-yard circle */}
-      <svg
-        className="absolute inset-0 w-full h-full pointer-events-none"
-        viewBox="0 0 100 140"
-        preserveAspectRatio="none"
         aria-hidden
-      >
-        <defs>
-          <radialGradient id="fieldGlow" cx="50%" cy="0%" r="80%">
-            <stop offset="0%" stopColor="oklch(0.30 0.08 155)" stopOpacity="0.18" />
-            <stop offset="60%" stopColor="oklch(0.20 0.05 155)" stopOpacity="0.06" />
-            <stop offset="100%" stopColor="oklch(0.10 0.02 155)" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-        {/* Subtle field illumination */}
-        <ellipse cx="50" cy="70" rx="46" ry="64" fill="url(#fieldGlow)" />
-        {/* Outer boundary — solid */}
-        <ellipse
-          cx="50"
-          cy="70"
-          rx="46"
-          ry="64"
-          fill="none"
-          stroke="oklch(0.55 0.08 155)"
-          strokeOpacity="0.18"
-          strokeWidth="0.22"
-        />
-        {/* Inner soft boundary — dashed */}
-        <ellipse
-          cx="50"
-          cy="70"
-          rx="42"
-          ry="58"
-          fill="none"
-          stroke="oklch(0.55 0.08 155)"
-          strokeOpacity="0.10"
-          strokeWidth="0.1"
-          strokeDasharray="0.6 1.8"
-        />
-        {/* 30-yard inner circle — fielding restriction */}
-        <ellipse
-          cx="50"
-          cy="70"
-          rx="24"
-          ry="34"
-          fill="none"
-          stroke="oklch(0.55 0.08 155)"
-          strokeOpacity="0.09"
-          strokeWidth="0.1"
-          strokeDasharray="0.8 1.4"
-        />
-      </svg>
-
-      {/* Pitch strip — warm tan ribbon (worn wicket) layered over green */}
-      <div
-        className="absolute top-[8%] bottom-[8%] left-1/2 -translate-x-1/2 w-[18%] pointer-events-none rounded-[1px]"
-        style={{
-          background: [
-            // Worn-wicket centerline (warm tan)
-            "linear-gradient(180deg, transparent 0%, oklch(0.50 0.06 80 / 0.05) 15%, oklch(0.55 0.07 80 / 0.07) 50%, oklch(0.50 0.06 80 / 0.05) 85%, transparent 100%)",
-            // Green tint underneath for the wicket grass
-            "linear-gradient(180deg, transparent 0%, oklch(0.45 0.10 155 / 0.04) 15%, oklch(0.45 0.10 155 / 0.04) 85%, transparent 100%)",
-          ].join(", "),
-          borderLeft: "1px dashed oklch(0.65 0.06 80 / 0.10)",
-          borderRight: "1px dashed oklch(0.65 0.06 80 / 0.10)",
-          boxShadow: "inset 0 0 24px oklch(0.45 0.10 155 / 0.06)",
-        }}
       />
 
-      {/* Wickets — top + bottom (popping crease, bowling crease, bails, stumps) */}
-      <Wicket position="top" />
-      <Wicket position="bottom" />
-
-      {/* Subtle dot grid (outfield texture) — fades toward center for legibility */}
+      {/* Pitch strip — tan ribbon down the center, soft glow */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-[0.045]"
+        className="absolute top-[6%] bottom-[6%] left-1/2 -translate-x-1/2 w-[14%] pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(180deg, transparent 0%, oklch(0.55 0.06 80 / 0.09) 22%, oklch(0.55 0.06 80 / 0.12) 50%, oklch(0.55 0.06 80 / 0.09) 78%, transparent 100%)",
+          borderLeft: "1px dashed oklch(0.65 0.06 80 / 0.14)",
+          borderRight: "1px dashed oklch(0.65 0.06 80 / 0.14)",
+        }}
+        aria-hidden
+      />
+
+      {/* Atmospheric top glow — stadium-light depth */}
+      <div
+        className="absolute top-0 left-0 right-0 h-[38%] pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 65% 100% at 50% 0%, oklch(0.55 0.1 155 / 0.12) 0%, transparent 70%)",
+        }}
+        aria-hidden
+      />
+
+      {/* Dot grid — outfield texture, fades from center */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.06]"
         style={{
           backgroundImage:
             "radial-gradient(oklch(0.985 0 0) 1px, transparent 1px)",
-          backgroundSize: "22px 22px",
+          backgroundSize: "24px 24px",
           maskImage:
-            "radial-gradient(ellipse 70% 80% at 50% 50%, transparent 20%, black 80%)",
+            "radial-gradient(ellipse 75% 85% at 50% 50%, transparent 20%, black 85%)",
           WebkitMaskImage:
-            "radial-gradient(ellipse 70% 80% at 50% 50%, transparent 20%, black 80%)",
+            "radial-gradient(ellipse 75% 85% at 50% 50%, transparent 20%, black 85%)",
         }}
+        aria-hidden
       />
 
-      {/* Corner vignette — adds depth + focuses attention */}
+      {/* Edge vignette — focuses attention center */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 100% 100% at 50% 50%, transparent 50%, oklch(0.06 0.01 155 / 0.55) 100%)",
+            "radial-gradient(ellipse 100% 100% at 50% 50%, transparent 55%, oklch(0.05 0.005 155 / 0.6) 100%)",
         }}
-      />
-
-      {/* Top stadium-light glow — adds atmosphere */}
-      <div
-        className="absolute top-0 left-0 right-0 h-[40%] pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 60% 100% at 50% 0%, oklch(0.55 0.08 155 / 0.07) 0%, transparent 70%)",
-        }}
+        aria-hidden
       />
     </>
   );
 }
 
-export function PitchView({ groups, rank }: PitchViewProps) {
+export function PitchView({ groups, rank, isLive = false }: PitchViewProps) {
   return (
-    <div className="relative w-full h-full overflow-hidden">
-      <CricketBackdrop />
+    <div className="pitch-view relative w-full h-full overflow-hidden">
+      <style>{PITCH_STYLES}</style>
+
+      <SubtleBackdrop />
 
       {/* Rank watermark — large, very faint, top-right */}
       {rank != null && (
@@ -293,16 +204,71 @@ export function PitchView({ groups, rank }: PitchViewProps) {
         </div>
       )}
 
-      {/* Content — 4 role tiers distributed evenly */}
-      <div className="relative h-full flex flex-col px-4 py-3">
-        {(["WK", "BAT", "AR", "BOWL"] as const).map((role) => (
-          <RoleSection
+      <div className="roster relative h-full flex flex-col px-2.5 py-3 gap-1">
+        {ROLE_ORDER.map((role) => (
+          <RoleRow
             key={role}
-            label={ROLE_LABELS[role]}
+            role={role}
             players={groups[role]}
+            isLive={isLive}
           />
         ))}
       </div>
     </div>
   );
 }
+
+/**
+ * Container-query-driven sizing.
+ * The roster element is the container; avatar/text/gaps scale with its size.
+ * Targets phone sheet heights from ~400px (worst case Chrome Android, URL bar visible)
+ * up to ~700px+ (large devices, URL bar collapsed).
+ */
+const PITCH_STYLES = `
+  .pitch-view .roster {
+    container-type: size;
+    container-name: roster;
+  }
+
+  /* base (smallest) — works down to ~360px container height */
+  .pitch-view .avatar { width: 30px; height: 30px; }
+  .pitch-view .initials { font-size: 10px; }
+  .pitch-view .pname { font-size: 9.5px; max-width: 64px; margin-top: 3px; }
+  .pitch-view .ppts { font-size: 8.5px; margin-top: 2px; }
+  .pitch-view .role-label-side { font-size: 8.5px; width: 30px; }
+  .pitch-view .cv-pill {
+    top: -3px; right: -4px;
+    height: 13px; min-width: 13px; padding: 0 2px;
+    border-radius: 9999px;
+    font-size: 7px;
+    box-shadow: 0 0 0 2px var(--color-background);
+  }
+  .pitch-view .row-players { gap: 4px 3px; }
+  .pitch-view .row-players-2 { gap: 6px 3px; }
+  .pitch-view .row-players-2 .ptoken { flex-basis: calc(33.333% - 4px); flex-grow: 0; flex-shrink: 1; }
+  .pitch-view .row-players-1 .ptoken { flex-basis: 0; flex-grow: 1; max-width: 84px; }
+  .pitch-view .ptoken { padding: 1px; }
+
+  /* medium container — ~440px+ container height */
+  @container roster (min-height: 440px) {
+    .pitch-view .avatar { width: 36px; height: 36px; }
+    .pitch-view .initials { font-size: 11px; }
+    .pitch-view .pname { font-size: 10.5px; max-width: 72px; margin-top: 4px; }
+    .pitch-view .ppts { font-size: 9.5px; margin-top: 2px; }
+    .pitch-view .role-label-side { font-size: 9px; width: 32px; }
+    .pitch-view .cv-pill { height: 15px; min-width: 15px; font-size: 7.5px; }
+    .pitch-view .row-players { gap: 6px 4px; }
+    .pitch-view .row-players-2 { gap: 10px 4px; }
+  }
+
+  /* large container — ~560px+ container height */
+  @container roster (min-height: 560px) {
+    .pitch-view .avatar { width: 42px; height: 42px; }
+    .pitch-view .initials { font-size: 12px; }
+    .pitch-view .pname { font-size: 11px; max-width: 80px; margin-top: 5px; }
+    .pitch-view .ppts { font-size: 10px; margin-top: 3px; }
+    .pitch-view .role-label-side { font-size: 9.5px; width: 36px; }
+    .pitch-view .cv-pill { height: 17px; min-width: 17px; font-size: 8.5px; }
+    .pitch-view .row-players-2 { gap: 16px 6px; }
+  }
+`;

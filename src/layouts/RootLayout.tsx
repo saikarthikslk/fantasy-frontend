@@ -56,7 +56,7 @@ export function RootLayout() {
             <div className="h-8 w-8 rounded-lg bg-primary-foreground flex items-center justify-center">
               <Swords className="h-4 w-4 text-primary" />
             </div>
-            <span>FantasyF</span>
+            <span>ApnaXI</span>
           </NavLink>
 
           {/* Desktop nav — hidden on mobile */}
@@ -160,7 +160,7 @@ export function RootLayout() {
       {!token && (
         <footer className="border-t py-6">
           <div className="container flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-            <p>FantasyF — Cricket fantasy dream teams</p>
+            <p>ApnaXI — Cricket fantasy dream teams</p>
             <p className="text-muted-foreground/60">Built with passion for cricket</p>
           </div>
         </footer>
