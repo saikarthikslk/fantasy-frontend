@@ -63,20 +63,20 @@ export function Home() {
               </>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setRulebookOpen(true)}
-            className="gap-1.5 text-muted-foreground hover:text-foreground mt-1"
-          >
-            <BookOpen className="h-3.5 w-3.5" />
-            Points Rulebook
-          </Button>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-2">
             {token
               ? "You're signed in — let's pick your XI."
               : 'Sign in to save your team and compete on the leaderboard.'}
           </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setRulebookOpen(true)}
+            className="gap-1.5 text-muted-foreground hover:text-foreground mt-3"
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            Points Rulebook
+          </Button>
         </div>
       </section>
 
