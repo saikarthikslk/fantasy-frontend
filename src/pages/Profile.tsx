@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ImageCropDialog } from '@/components/ImageCropDialog'
+import { PointsRulebookDialog } from '@/components/PointsRulebookDialog'
 import { Switch } from '@/components/ui/switch'
 import {
   Select,
@@ -28,6 +29,7 @@ import {
   FlaskConical,
   Keyboard,
   ChevronRight,
+  BookOpen,
 } from 'lucide-react'
 import { useKeyboard } from '@/keyboard/useKeyboard'
 
@@ -73,6 +75,7 @@ export function Profile() {
   // Crop dialog state
   const [cropDialogOpen, setCropDialogOpen] = useState(false)
   const [rawImageSrc, setRawImageSrc] = useState<string | null>(null)
+  const [rulebookOpen, setRulebookOpen] = useState(false)
 
   // Sync form state when profile loads
   useEffect(() => {
@@ -341,6 +344,31 @@ export function Profile() {
           <KeyboardShortcutsRow />
         </CardContent>
       </Card>
+
+      {/* Points Rulebook */}
+      <Card className="mt-4">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
+            Points Rulebook
+          </CardTitle>
+          <CardDescription>
+            Understand how players earn points in every match.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="outline"
+            className="w-full justify-between gap-2"
+            onClick={() => setRulebookOpen(true)}
+          >
+            View Rulebook
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </CardContent>
+      </Card>
+
+      <PointsRulebookDialog open={rulebookOpen} onOpenChange={setRulebookOpen} />
 
     </div>
   )
