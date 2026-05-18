@@ -589,20 +589,21 @@ export function MatchDetail() {
   }, [lbRows, sheetLbEntry]);
   const canShowCompare = sheetDid != null && sheetDid !== myDreamId && myLbEntry != null && sheetLbEntry != null;
 
-  // SSE for live refresh — only connect when match is in progress
+  // SSE for live refresh — connect for any non-completed match so we catch the Upcoming→Live transition
   const match = useMemo(
     () => allMatches.find((m: ApiMatch) => m.matchId === matchId) ?? null,
     [allMatches, matchId],
   );
   const teamCreationLocked = match != null && (match.state === "In Progress" || match.state === "Live");
   const matchStarted = teamCreationLocked || match?.state === "Completed";
+  const sseEnabled = match != null && match.state !== "Completed";
   useEffect(() => {
-    if (!teamCreationLocked) return;
+    if (!sseEnabled) return;
     const es = new EventSource(apiUrl("/api/stream/notif/" + matchId));
     es.addEventListener("refresh", () => refreshRef.current());
     es.onerror = () => {};
     return () => { es.close(); };
-  }, [matchId, teamCreationLocked]);
+  }, [matchId, sseEnabled]);
 
   const innings1 = useMemo(() => parseInnings(scRaw?.innings1), [scRaw]);
   const innings2 = useMemo(() => parseInnings(scRaw?.innings2), [scRaw]);
@@ -819,6 +820,7 @@ export function MatchDetail() {
                   teamNames={teamNames}
                   rank={matchStarted ? (sheetLbRank || null) : null}
                   totalPlayers={matchStarted ? (lbRows.length || null) : null}
+                  isLive={teamCreationLocked}
                 />
               )}
               {sheetTab === "compare" && canShowCompare && (
@@ -887,6 +889,7 @@ export function MatchDetail() {
                   teamNames={teamNames}
                   rank={matchStarted ? (sheetLbRank || null) : null}
                   totalPlayers={matchStarted ? (lbRows.length || null) : null}
+                  isLive={teamCreationLocked}
                 />
               )}
               {sheetTab === "compare" && canShowCompare && (

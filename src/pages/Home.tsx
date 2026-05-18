@@ -8,8 +8,10 @@ import {
   Users,
   BarChart3,
   Target,
-  Zap,
-  Shield,
+  Sparkles,
+  Shuffle,
+  GitCompare,
+  Activity,
   ArrowRight,
 } from 'lucide-react'
 
@@ -19,23 +21,20 @@ export function Home() {
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="relative overflow-hidden border-b">
+      <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(255,255,255,0.04),transparent)]" />
         <div className="container relative py-20 md:py-32 flex flex-col items-center text-center gap-6">
           <div className="inline-flex items-center gap-2 rounded-full border bg-muted/50 px-4 py-1.5 text-xs font-medium text-muted-foreground">
             <Swords className="h-3.5 w-3.5 text-primary" />
-            Cricket Fantasy
+            IPL Fantasy Cricket
           </div>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight max-w-3xl leading-[1.1]">
-            Pick your XI.{' '}
-            <span className="text-muted-foreground/60">Captain.</span>{' '}
-            Vice-captain.{' '}
-            <span className="text-muted-foreground/60">Points.</span>
+            Outsmart the league.<br />
+            <span className="text-muted-foreground/60">One XI at a time.</span>
           </h1>
           <p className="text-muted-foreground text-lg md:text-xl max-w-2xl leading-relaxed">
-            Choose real fixtures, build an 11-player squad under fantasy rules,
-            set your captain and vice-captain, then follow scorecards and
-            leaderboards match by match.
+            Smart XI in one tap. Auto-subs when players sit out. Live points
+            every ball. Compare squads with your league.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
             {!token && (
@@ -62,11 +61,16 @@ export function Home() {
           </div>
           <p className="text-sm text-muted-foreground mt-2">
             {token
-              ? "You're signed in — inkem? Kaanivuu kaanivuu.."
+              ? "You're signed in — let's pick your XI."
               : 'Sign in to save your team and compete on the leaderboard.'}
           </p>
         </div>
       </section>
+
+      {/* Section divider */}
+      <div className="container">
+        <div className="h-px bg-linear-to-r from-transparent via-border to-transparent" />
+      </div>
 
       {/* How it works */}
       <section className="container py-16 md:py-24">
@@ -90,7 +94,7 @@ export function Home() {
               step: '2',
               icon: Users,
               title: 'Create your dream team',
-              desc: 'Balance WK / BAT / AR / BOWL and max players per real team — then pick captain & VC.',
+              desc: 'Hand-pick across WK / BAT / AR / BOWL or use Smart XI to auto-build a balanced squad — then lock in captain & VC.',
             },
             {
               step: '3',
@@ -119,33 +123,44 @@ export function Home() {
         </div>
       </section>
 
+      {/* Section divider */}
+      <div className="container">
+        <div className="h-px bg-linear-to-r from-transparent via-border to-transparent" />
+      </div>
+
       {/* Features */}
-      <section className="border-t">
+      <section>
         <div className="container py-16 md:py-24">
           <div className="text-center mb-12">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-              Why FantasyF
+              Why ApnaXI
             </h2>
             <p className="text-muted-foreground mt-2">
-              Built for cricket fans who love fantasies 🌚
+              Smart picks, automatic substitutions, head-to-head comparisons —
+              built for serious IPL fans.
             </p>
           </div>
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
-                icon: Swords,
-                title: 'Cricket only',
-                desc: 'Inkem kavaali enti? 😏',
+                icon: Sparkles,
+                title: 'Smart XI auto-pick',
+                desc: 'One tap builds an optimized 11 — balanced roles, credits maximised, captain and vice-captain set for you.',
               },
               {
-                icon: Zap,
-                title: 'Reliable and robust',
-                desc: 'Match chudakunda wick gaadu bugs fix chesthaad!!',
+                icon: Shuffle,
+                title: 'Auto-replace benched players',
+                desc: 'If your pick is not in the playing XI, ApnaXI swaps them with the best available — never lose points to absent players.',
               },
               {
-                icon: Shield,
-                title: 'Fair squad rules',
-                desc: 'Wick gadiki nachinattu, ranking marchi dengthaad..',
+                icon: Activity,
+                title: 'Live points, ball by ball',
+                desc: 'Watch your XI rack up points in real time — boundaries, wickets, milestones reflected the instant they happen.',
+              },
+              {
+                icon: GitCompare,
+                title: 'Head-to-head comparison',
+                desc: 'Stack your XI against any opponent player by player — captain calls, role splits, and live point deltas.',
               },
             ].map((item) => (
               <div key={item.title} className="flex gap-4 p-4 rounded-lg hover:bg-muted/50 transition-colors">
