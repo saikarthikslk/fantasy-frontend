@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { OAUTH_GOOGLE_URL } from '../api/client'
 import { useAuthToken } from '../auth/useAuthToken'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { PointsRulebookDialog } from '@/components/PointsRulebookDialog'
 import {
   Swords,
   Users,
@@ -13,10 +15,12 @@ import {
   GitCompare,
   Activity,
   ArrowRight,
+  BookOpen,
 } from 'lucide-react'
 
 export function Home() {
   const token = useAuthToken()
+  const [rulebookOpen, setRulebookOpen] = useState(false)
 
   return (
     <div className="flex flex-col">
@@ -58,6 +62,15 @@ export function Home() {
                 </Button>
               </>
             )}
+            <Button
+              variant="outline"
+              size="lg"
+              className="gap-2"
+              onClick={() => setRulebookOpen(true)}
+            >
+              <BookOpen className="h-4 w-4" />
+              Points Rulebook
+            </Button>
           </div>
           <p className="text-sm text-muted-foreground mt-2">
             {token
@@ -178,6 +191,7 @@ export function Home() {
           </div>
         </div>
       </section>
+      <PointsRulebookDialog open={rulebookOpen} onOpenChange={setRulebookOpen} />
     </div>
   )
 }
