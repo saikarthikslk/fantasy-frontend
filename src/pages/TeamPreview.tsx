@@ -51,7 +51,7 @@ function groupByRole(players, captainId, vcId) {
   return groups;
 }
 
-function PlayerRow({ player, isLive }) {
+function PlayerRow({ player }) {
   const [imgErr, setImgErr] = useState(false);
   const initials = player.name?.split(" ").map((w) => w[0]).slice(0, 2).join("") || "?";
   const teamColor = getTeamBrandColor(player.team);
@@ -98,11 +98,10 @@ function PlayerRow({ player, isLive }) {
         )}
       </div>
 
-      {/* Points — live only */}
-      {isLive && (
+      {player.points != null && (
         <div className="flex items-baseline gap-1 shrink-0 tabular-nums">
           <span className="text-base font-bold text-foreground">
-            {player.points != null ? player.points.toFixed(1) : "—"}
+            {player.points.toFixed(1)}
           </span>
           <span className="text-[10px] text-muted-foreground uppercase tracking-wider">pts</span>
         </div>
@@ -111,7 +110,7 @@ function PlayerRow({ player, isLive }) {
   );
 }
 
-function RoleGroup({ role, players, isLive }) {
+function RoleGroup({ role, players }) {
   if (!players?.length) return null;
   return (
     <div>
@@ -135,7 +134,7 @@ function RoleGroup({ role, players, isLive }) {
       </div>
       <div className="space-y-0.5">
         {players.map((p) => (
-          <PlayerRow key={p.playerid} player={p} isLive={isLive} />
+          <PlayerRow key={p.playerid} player={p} />
         ))}
       </div>
     </div>
@@ -336,7 +335,7 @@ export default function TeamPreview({ matchId, dreamId, lbEntry = null, teamName
       ) : (
         <div className="flex-1 min-h-0 overflow-y-auto p-4 pt-4 space-y-5">
           {ROLE_ORDER.map((role) => (
-            <RoleGroup key={role} role={role} players={groups[role]} isLive={isLive} />
+            <RoleGroup key={role} role={role} players={groups[role]} />
           ))}
         </div>
       )}
