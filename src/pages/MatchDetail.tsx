@@ -1276,7 +1276,7 @@ export function MatchDetail() {
                 smartTeam={matchData?.smartTeam ?? null}
                 innings1={innings1}
                 innings2={innings2}
-                isLive={teamCreationLocked}
+                isLive={matchStarted}
                 match={match}
               />
             </TabsContent>

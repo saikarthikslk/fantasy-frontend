@@ -29,7 +29,7 @@ const ROLE_LABELS: Record<RoleKey, string> = {
   BOWL: "BOWL",
 };
 
-function PlayerToken({ player, isLive }: { player: Player; isLive: boolean }) {
+function PlayerToken({ player }: { player: Player }) {
   const [imgErr, setImgErr] = useState(false);
   const initials =
     player.name?.split(" ").map((w) => w[0]).slice(0, 2).join("") || "?";
@@ -76,9 +76,9 @@ function PlayerToken({ player, isLive }: { player: Player; isLive: boolean }) {
         {shortPlayerName(player.name, 0)}
       </p>
 
-      {isLive && (
+      {player.points != null && (
         <p className="ppts font-semibold tabular-nums text-muted-foreground leading-none">
-          {player.points != null ? `${player.points.toFixed(0)} pts` : "— pts"}
+          {player.points.toFixed(0)} pts
         </p>
       )}
     </div>
@@ -88,11 +88,9 @@ function PlayerToken({ player, isLive }: { player: Player; isLive: boolean }) {
 function RoleRow({
   role,
   players,
-  isLive,
 }: {
   role: RoleKey;
   players: Player[];
-  isLive: boolean;
 }) {
   if (!players.length) return null;
   const lanes = players.length >= 5 ? 2 : 1;
@@ -114,7 +112,7 @@ function RoleRow({
         )}
       >
         {players.map((p) => (
-          <PlayerToken key={p.playerid} player={p} isLive={isLive} />
+          <PlayerToken key={p.playerid} player={p} />
         ))}
       </div>
       <span className="role-label-side shrink-0 opacity-0 pointer-events-none" aria-hidden>
@@ -210,7 +208,6 @@ export function PitchView({ groups, rank, isLive = false }: PitchViewProps) {
             key={role}
             role={role}
             players={groups[role]}
-            isLive={isLive}
           />
         ))}
       </div>
