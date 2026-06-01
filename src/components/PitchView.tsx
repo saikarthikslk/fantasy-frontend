@@ -186,7 +186,7 @@ function SubtleBackdrop() {
   );
 }
 
-export function PitchView({ groups, rank, isLive = false }: PitchViewProps) {
+export function PitchView({ groups, rank }: PitchViewProps) {
   return (
     <div className="pitch-view relative w-full h-full overflow-hidden">
       <style>{PITCH_STYLES}</style>
