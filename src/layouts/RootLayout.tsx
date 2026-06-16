@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { OAUTH_GOOGLE_URL, setToken } from '../api/client'
+import { setToken } from '../api/client'
 import { TokenCapture } from '../components/TokenCapture'
 import { useState } from 'react'
 import { useAuthToken } from '../auth/useAuthToken'
@@ -82,16 +82,12 @@ export function RootLayout() {
               ))}
           </nav>
 
-          {/* Desktop auth — hidden on mobile */}
+          {/* Desktop auth — hidden on mobile. Sign-in removed (backend decommissioned). */}
           <div className="hidden md:flex items-center gap-2">
-            {token ? (
+            {token && (
               <Button variant="ghost" size="sm" onClick={signOut} className="gap-2">
                 <LogOut className="h-4 w-4" />
                 Sign out
-              </Button>
-            ) : (
-              <Button asChild size="sm">
-                <a href={OAUTH_GOOGLE_URL}>Sign in with Google</a>
               </Button>
             )}
           </div>
@@ -132,17 +128,14 @@ export function RootLayout() {
                   </>
                 )}
 
-                <DropdownMenuSeparator />
-
-                {token ? (
-                  <DropdownMenuItem onClick={signOut}>
-                    <LogOut className="h-4 w-4 text-muted-foreground" />
-                    <span>Sign out</span>
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem asChild>
-                    <a href={OAUTH_GOOGLE_URL}>Sign in with Google</a>
-                  </DropdownMenuItem>
+                {token && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={signOut}>
+                      <LogOut className="h-4 w-4 text-muted-foreground" />
+                      <span>Sign out</span>
+                    </DropdownMenuItem>
+                  </>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
