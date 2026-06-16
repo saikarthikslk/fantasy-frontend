@@ -6,8 +6,8 @@ import { formatPoints } from '@/lib/format'
 import type { SeasonPlayer } from '@/data/useSeasonBoard'
 
 export function Podium({ players }: { players: SeasonPlayer[] }) {
-  const top = players.slice(0, 3)
-  const urls = useMemo(() => top.map((p) => base64ToBlobUrl(p.imageurl)), [players])
+  const top = useMemo(() => players.slice(0, 3), [players])
+  const urls = useMemo(() => top.map((p) => base64ToBlobUrl(p.imageurl)), [top])
   if (top.length < 3) return null
   return (
     <section className="container py-8">
