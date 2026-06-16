@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useSeasonBoard } from '@/data/useSeasonBoard'
 import { LandingHero } from './landing/LandingHero'
 import { AboutSection } from './landing/AboutSection'
@@ -6,11 +7,13 @@ import { StandingsTable } from './landing/StandingsTable'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
+import { PointsRulebookDialog } from '@/components/PointsRulebookDialog'
 import { AlertCircle, Trophy } from 'lucide-react'
 import { formatMonthRange } from '@/lib/format'
 
 export function Home() {
   const { data, isLoading, isError, refetch } = useSeasonBoard()
+  const [rulebookOpen, setRulebookOpen] = useState(false)
 
   if (isLoading) {
     return (
@@ -57,7 +60,11 @@ export function Home() {
         </p>
       </div>
 
-      <LandingHero champion={meta.champion} onDownload={() => window.print()} />
+      <LandingHero
+        champion={meta.champion}
+        onDownload={() => window.print()}
+        onOpenRulebook={() => setRulebookOpen(true)}
+      />
       <AboutSection meta={meta} />
       <Podium players={players} />
       <StandingsTable players={players} />
@@ -65,6 +72,8 @@ export function Home() {
       <div className="container py-10 text-center text-xs text-muted-foreground print:hidden">
         Season closed · {meta.matchCount} matches · {formatMonthRange(meta.firstMatch, meta.lastMatch)}
       </div>
+
+      <PointsRulebookDialog open={rulebookOpen} onOpenChange={setRulebookOpen} />
     </div>
   )
 }

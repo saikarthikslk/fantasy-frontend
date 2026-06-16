@@ -1,14 +1,16 @@
 import { Button } from '@/components/ui/button'
-import { Download, Trophy } from 'lucide-react'
+import { Download, Trophy, BookOpen } from 'lucide-react'
 import { formatPoints } from '@/lib/format'
 import type { SeasonPlayer } from '@/data/useSeasonBoard'
 
 export function LandingHero({
   champion,
   onDownload,
+  onOpenRulebook,
 }: {
   champion: SeasonPlayer | null
   onDownload: () => void
+  onOpenRulebook: () => void
 }) {
   return (
     <section className="relative overflow-hidden">
@@ -32,6 +34,10 @@ export function LandingHero({
           <Button size="lg" className="gap-2" onClick={onDownload}>
             <Download className="h-4 w-4" />
             Download Results (PDF)
+          </Button>
+          <Button variant="outline" size="lg" className="gap-2" onClick={onOpenRulebook}>
+            <BookOpen className="h-4 w-4" />
+            Points Rulebook
           </Button>
         </div>
       </div>
