@@ -1,197 +1,70 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { OAUTH_GOOGLE_URL } from '../api/client'
-import { useAuthToken } from '../auth/useAuthToken'
-import { Button } from '@/components/ui/button'
+import { useSeasonBoard } from '@/data/useSeasonBoard'
+import { LandingHero } from './landing/LandingHero'
+import { AboutSection } from './landing/AboutSection'
+import { Podium } from './landing/Podium'
+import { StandingsTable } from './landing/StandingsTable'
 import { Card, CardContent } from '@/components/ui/card'
-import { PointsRulebookDialog } from '@/components/PointsRulebookDialog'
-import {
-  Swords,
-  Users,
-  BarChart3,
-  Target,
-  Sparkles,
-  Shuffle,
-  GitCompare,
-  Activity,
-  ArrowRight,
-  BookOpen,
-} from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
+import { AlertCircle, Trophy } from 'lucide-react'
+import { formatMonthRange } from '@/lib/format'
 
 export function Home() {
-  const token = useAuthToken()
-  const [rulebookOpen, setRulebookOpen] = useState(false)
+  const { data, isLoading, isError, refetch } = useSeasonBoard()
 
-  return (
-    <div className="flex flex-col">
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(255,255,255,0.04),transparent)]" />
-        <div className="container relative py-20 md:py-32 flex flex-col items-center text-center gap-6">
-          <div className="inline-flex items-center gap-2 rounded-full border bg-muted/50 px-4 py-1.5 text-xs font-medium text-muted-foreground">
-            <Swords className="h-3.5 w-3.5 text-primary" />
-            IPL Fantasy Cricket
-          </div>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight max-w-3xl leading-[1.1]">
-            Outsmart the league.<br />
-            <span className="text-muted-foreground/60">One XI at a time.</span>
-          </h1>
-          <p className="text-muted-foreground text-lg md:text-xl max-w-2xl leading-relaxed">
-            Smart XI in one tap. Auto-subs when players sit out. Live points
-            every ball. Compare squads with your league.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
-            {!token && (
-              <Button asChild size="lg" className="gap-2">
-                <a href={OAUTH_GOOGLE_URL}>
-                  Sign in with Google
-                  <ArrowRight className="h-4 w-4" />
-                </a>
-              </Button>
-            )}
-            {token !== null && (
-              <>
-                <Button asChild size="lg" className="gap-2">
-                  <Link to="/matches">
-                    View matches
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" size="lg">
-                  <Link to="/leaderboard">Season Board</Link>
-                </Button>
-              </>
-            )}
-          </div>
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={() => setRulebookOpen(true)}
-            className="gap-1.5 text-muted-foreground hover:text-foreground mt-3"
-          >
-            <BookOpen className="h-3.5 w-3.5" />
-            Points Rulebook
-          </Button>
-          <p className="text-sm text-muted-foreground mt-2">
-            {token
-              ? "You're signed in — let's pick your XI."
-              : 'Sign in to save your team and compete on the leaderboard.'}
-          </p>
-        </div>
-      </section>
-
-      {/* Section divider */}
-      <div className="container">
-        <div className="h-px bg-linear-to-r from-transparent via-border to-transparent" />
-      </div>
-
-      {/* How it works */}
-      <section className="container py-16 md:py-24">
-        <div className="text-center mb-12">
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-            How it works
-          </h2>
-          <p className="text-muted-foreground mt-2">
-            Three simple steps to start competing
-          </p>
-        </div>
-        <div className="grid gap-6 md:grid-cols-3">
-          {[
-            {
-              step: '1',
-              icon: Target,
-              title: 'Choose a match',
-              desc: 'Filter upcoming, live, or completed fixtures and open any card for the scorecard and match leaderboard.',
-            },
-            {
-              step: '2',
-              icon: Users,
-              title: 'Create your dream team',
-              desc: 'Hand-pick across WK / BAT / AR / BOWL or use Smart XI to auto-build a balanced squad — then lock in captain & VC.',
-            },
-            {
-              step: '3',
-              icon: BarChart3,
-              title: 'Track the game',
-              desc: 'Follow the match hub for live scores and fantasy standings as the game unfolds.',
-            },
-          ].map((item) => (
-            <Card key={item.step} className="relative overflow-hidden group hover:border-primary/30 transition-colors">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <item.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <span className="text-5xl font-bold text-muted-foreground/20 absolute top-4 right-6">
-                    {item.step}
-                  </span>
-                </div>
-                <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {item.desc}
-                </p>
-              </CardContent>
-            </Card>
+  if (isLoading) {
+    return (
+      <div className="container py-20 flex flex-col items-center gap-6">
+        <Skeleton className="h-12 w-80 max-w-full" />
+        <Skeleton className="h-6 w-96 max-w-full" />
+        <div className="grid sm:grid-cols-3 gap-3 w-full max-w-2xl mt-8">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-40 rounded-xl" />
           ))}
         </div>
-      </section>
+        <Skeleton className="h-96 w-full max-w-3xl rounded-xl" />
+      </div>
+    )
+  }
 
-      {/* Section divider */}
-      <div className="container">
-        <div className="h-px bg-linear-to-r from-transparent via-border to-transparent" />
+  if (isError || !data) {
+    return (
+      <div className="container py-20 flex justify-center">
+        <Card className="border-destructive/50 max-w-md w-full">
+          <CardContent className="flex flex-col items-center text-center gap-4 pt-6">
+            <AlertCircle className="h-8 w-8 text-destructive" />
+            <p className="text-sm text-muted-foreground">Couldn't load the season results.</p>
+            <Button variant="outline" onClick={() => refetch()}>
+              Try again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const { players, meta } = data
+  return (
+    <div className="flex flex-col">
+      {/* Print-only report header (shown only when printing to PDF) */}
+      <div className="hidden print:block container pt-6 pb-2">
+        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <Trophy className="h-5 w-5 text-gold" />
+          IPL Fantasy 2026 — Final Standings
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {meta.playerCount} players · {meta.matchCount} matches · {formatMonthRange(meta.firstMatch, meta.lastMatch)}
+        </p>
       </div>
 
-      {/* Features */}
-      <section>
-        <div className="container py-16 md:py-24">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-              Why ApnaXI
-            </h2>
-            <p className="text-muted-foreground mt-2">
-              Smart picks, automatic substitutions, head-to-head comparisons —
-              built for serious IPL fans.
-            </p>
-          </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              {
-                icon: Sparkles,
-                title: 'Smart XI auto-pick',
-                desc: 'One tap builds an optimized 11 — balanced roles, credits maximised, captain and vice-captain set for you.',
-              },
-              {
-                icon: Shuffle,
-                title: 'Auto-replace benched players',
-                desc: 'If your pick is not in the playing XI, ApnaXI swaps them with the best available — never lose points to absent players.',
-              },
-              {
-                icon: Activity,
-                title: 'Live points, ball by ball',
-                desc: 'Watch your XI rack up points in real time — boundaries, wickets, milestones reflected the instant they happen.',
-              },
-              {
-                icon: GitCompare,
-                title: 'Head-to-head comparison',
-                desc: 'Stack your XI against any opponent player by player — captain calls, role splits, and live point deltas.',
-              },
-            ].map((item) => (
-              <div key={item.title} className="flex gap-4 p-4 rounded-lg hover:bg-muted/50 transition-colors">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <item.icon className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {item.desc}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      <PointsRulebookDialog open={rulebookOpen} onOpenChange={setRulebookOpen} />
+      <LandingHero champion={meta.champion} onDownload={() => window.print()} />
+      <AboutSection meta={meta} />
+      <Podium players={players} />
+      <StandingsTable players={players} />
+
+      <div className="container py-10 text-center text-xs text-muted-foreground print:hidden">
+        Season closed · {meta.matchCount} matches · {formatMonthRange(meta.firstMatch, meta.lastMatch)}
+      </div>
     </div>
   )
 }
