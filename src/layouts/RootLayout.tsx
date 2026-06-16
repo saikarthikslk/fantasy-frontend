@@ -1,164 +1,22 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { setToken } from '../api/client'
+import { Outlet } from 'react-router-dom'
 import { TokenCapture } from '../components/TokenCapture'
 import { useState } from 'react'
 import { useAuthToken } from '../auth/useAuthToken'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu'
-import {
-  Trophy,
-  Swords,
-  LogOut,
-  Menu,
-  Home,
-  User,
-} from 'lucide-react'
 import { CommandMenu } from '@/keyboard/CommandMenu'
 import { ShortcutsHelpModal } from '@/keyboard/ShortcutsHelpModal'
 
 export function RootLayout() {
-  const [token, settoken1] = useState<string | null>(useAuthToken())
-  const navigate = useNavigate()
-
-  const navItems = [
-    { to: '/', label: 'Home', icon: Home, end: true, always: true },
-    { to: '/matches', label: 'Matches', icon: Swords, end: false, always: false },
-    { to: '/leaderboard', label: 'Season Board', icon: Trophy, end: false, always: false },
-    { to: '/profile', label: 'Profile', icon: User, end: false, always: false },
-  ]
-
-  const signOut = () => {
-    setToken(null)
-    settoken1(null)
-    window.location.href = '/'
-  }
+  const [, settoken1] = useState<string | null>(useAuthToken())
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
       <TokenCapture setroot={settoken1} />
 
-      {/* Top bar */}
-      <header className="shrink-0 z-40 border-b bg-background/80 backdrop-blur-lg">
-        <div className="container flex h-14 items-center justify-between">
-
-          {/* Brand */}
-          <NavLink
-            to="/"
-            end
-            className="flex items-center gap-2 font-bold text-lg tracking-tight text-foreground hover:no-underline"
-          >
-            <div className="h-8 w-8 rounded-lg bg-primary-foreground flex items-center justify-center">
-              <Swords className="h-4 w-4 text-primary" />
-            </div>
-            <span>ApnaXI</span>
-          </NavLink>
-
-          {/* Desktop nav — hidden on mobile */}
-          <nav className="hidden md:flex items-center gap-1" aria-label="Main">
-            {navItems
-              .filter((item) => item.always || token !== null)
-              .map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.end}
-                  className={({ isActive }) =>
-                    `inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:no-underline ${
-                      isActive
-                        ? 'bg-accent text-accent-foreground'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-                    }`
-                  }
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </NavLink>
-              ))}
-          </nav>
-
-          {/* Desktop auth — hidden on mobile. Sign-in removed (backend decommissioned). */}
-          <div className="hidden md:flex items-center gap-2">
-            {token && (
-              <Button variant="ghost" size="sm" onClick={signOut} className="gap-2">
-                <LogOut className="h-4 w-4" />
-                Sign out
-              </Button>
-            )}
-          </div>
-
-          {/* Mobile dropdown — hidden on desktop */}
-          <div className="md:hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Open menu"
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-
-              <DropdownMenuContent align="end" className="w-52">
-                {navItems
-                  .filter((item) => (item.always || token !== null) && item.to !== '/profile')
-                  .map((item) => (
-                    <DropdownMenuItem
-                      key={item.to}
-                      onClick={() => navigate(item.to)}
-                    >
-                      <item.icon className="h-4 w-4 text-muted-foreground" />
-                      <span>{item.label}</span>
-                    </DropdownMenuItem>
-                  ))}
-
-                {token && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => navigate('/profile')}>
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span>Profile</span>
-                    </DropdownMenuItem>
-                  </>
-                )}
-
-                {token && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={signOut}>
-                      <LogOut className="h-4 w-4 text-muted-foreground" />
-                      <span>Sign out</span>
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-        </div>
-      </header>
-
-      {/* Scrollable area below header */}
+      {/* No header — brand lives in the landing hero */}
       <div className="flex-1 overflow-y-auto flex flex-col">
         <main className="flex-1">
           <Outlet />
         </main>
-
-        {/* Footer — only shown when logged out */}
-        {!token && (
-          <footer className="border-t py-6">
-            <div className="container flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-              <p>ApnaXI — Cricket fantasy dream teams</p>
-              <p className="text-muted-foreground/60">Built with passion for cricket</p>
-            </div>
-          </footer>
-        )}
       </div>
 
       {/* Keyboard UI — portals to body */}
